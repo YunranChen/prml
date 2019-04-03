@@ -15,7 +15,7 @@ prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
 \value{
 A list.
 \describe{
-  \item{out1}{Result of \code{prml_tests}}
+  \item{out1}{Result of \link{prml_tests}}
   \item{out2}{pdf of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
 }
 }

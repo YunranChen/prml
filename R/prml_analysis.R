@@ -29,7 +29,7 @@ logmean <- function(x) {
 #' @param rate_ A number, rate of the truncated gamma.
 #' @param a lower bound of the range
 #' @param b upper bound of the range
-#' @return A vector, iid samples from \eqn{ Ga_{[a,b]}(shape\_,rate\_) }
+#' @return A vector, iid samples from \eqn{ Ga_{[a,b]}(shape_,rate_) }
 rtgamma <- function(size, shape_, rate_, a, b) {
     u <- runif(n = size)
     c_inv <- pgamma(q = b, shape = shape_, rate = rate_) -
@@ -46,7 +46,7 @@ rtgamma <- function(size, shape_, rate_, a, b) {
 #' @param rate_ A number, rate of the truncated gamma.
 #' @param a lower bound of the range
 #' @param b upper bound of the range
-#' @return A vector, pdf of \eqn{ Ga_{[a,b]}(x\_; shape\_,rate\_) }
+#' @return A vector, pdf of \eqn{ Ga_{[a,b]}(x_; shape_,rate_) }
 dtgamma <- function(x_, shape_, rate_, a, b) {
     c_inv <- pgamma(q = b, shape = shape_, rate = rate_) -
         pgamma(q = a, shape = shape_, rate = rate_)
@@ -1111,7 +1111,7 @@ prml_mix_f <- function(xs_bn, xs_a, xs_b, mu_l = 0, mu_u = 180, e = 0, r_a = 0.5
 #' @param mu_u A number. 100 by default. The number of grids used to represent the pdf of f.
 #' @return A list.
 #' \describe{
-#'   \item{out1}{Result of \code{prml_tests}}
+#'   \item{out1}{Result of \link{prml_tests}}
 #'   \item{out2}{pdf of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
 #' }
 #' @seealso \code{\link{prml_tests}}

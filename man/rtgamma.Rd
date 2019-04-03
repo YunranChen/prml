@@ -18,7 +18,7 @@ rtgamma(size, shape_, rate_, a, b)
 \item{b}{upper bound of the range}
 }
 \value{
-A vector, iid samples from \eqn{ Ga_{[a,b]}(shape\_,rate\_) }
+A vector, iid samples from \eqn{ Ga_{[a,b]}(shape_,rate_) }
 }
 \description{
 Generate random variable from truncated gamma
