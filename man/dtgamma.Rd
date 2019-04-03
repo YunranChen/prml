@@ -18,7 +18,7 @@ dtgamma(x_, shape_, rate_, a, b)
 \item{b}{upper bound of the range}
 }
 \value{
-A vector, pdf of \equ{ Ga_{[\code{a},\code{b}]}(\code{x}; \code{shape_},\code{rate_}) }
+A vector, pdf of \eqn{ Ga_{[a,b]}(x\_; shape\_,rate\_) }
 }
 \description{
 Calculate pdf of the truncated gamma

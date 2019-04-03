@@ -15,9 +15,9 @@ prml.mix(xs_bn, xs_a, xs_b, mu_l = "min", mu_u = "max", e = 0,
 
 \item{xs_b}{A vector. Spike counts of repeated single-stimulus trial data B.}
 
-\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \equ{ max(0,\underset{j=A,B,AB}{\min}(\min(Y_j)-2\text{std}(Y_j))) }}
+\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ max(0,\underset{j=A,B,AB}{\min}(\min(Y_j)-2\text{std}(Y_j))) }}
 
-\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \equ{ \underset{j=A,B,AB}{\max}(\max(Y_j)+2\text{std}(Y_j)) }}
+\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{j=A,B,AB}{\max}(\max(Y_j)+2\text{std}(Y_j)) }}
 
 \item{e}{A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.}
 

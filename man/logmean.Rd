@@ -10,7 +10,7 @@ logmean(x)
 \item{x}{A vector.}
 }
 \value{
-A number, the \eqn{ \text{log}(\text{mean}(\text{exp}(x))) }
+A number, the \eqn{ log(mean(exp(x))) }
 }
 \description{
 Calculate the log(mean(exp(x)))
