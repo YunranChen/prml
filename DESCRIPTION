@@ -17,7 +17,8 @@ Imports:
     statmod,
     dplyr,
     purrr
-URL: https://github.com/YunranChen/Rpkg-prml 
+URL: https://github.com/YunranChen/prml
+BugReports: https://github.com/YunranChen/prml/issues
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
