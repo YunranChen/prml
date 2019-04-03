@@ -1,0 +1,25 @@
+Package: prml
+Type: Package
+Title: An implementation of PRML classifier and PRML filter
+Version: 0.1.0
+Author: person("Yunran", "Chen", email = "yunran.chen@duke.edu", 
+  role = c("aut", "cre"))
+Maintainer: The package maintainer <yunran.chen@duke.edu>
+Description: The package provides: (1) PRML classifier to test between types of 
+    Poisson mixtures. It helps to classify the activation patterns that a single 
+    neuron exhibits when preserving information from multiple stimuli. (2) PRML 
+    filter to test Poisson versus Poisson mixtures. It helps to screen out 
+    over-dispersed Poisson data. 
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports:
+    statmod,
+    dplyr,
+    purrr
+URL: https://github.com/YunranChen/Rpkg-prml 
+RoxygenNote: 6.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
