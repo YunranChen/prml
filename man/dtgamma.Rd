@@ -2,7 +2,7 @@
 % Please edit documentation in R/prml_analysis.R
 \name{dtgamma}
 \alias{dtgamma}
-\title{Calculate pdf of the truncated gamma \equ{Ga_{[\code{a},\code{b}]}(\code{shape_},\code{rate_})}}
+\title{Calculate pdf of the truncated gamma}
 \usage{
 dtgamma(x_, shape_, rate_, a, b)
 }
@@ -18,8 +18,8 @@ dtgamma(x_, shape_, rate_, a, b)
 \item{b}{upper bound of the range}
 }
 \value{
-A vector, pdf of \equ{Ga_{[\code{a},\code{b}]}(\code{x}; \code{shape_},\code{rate_})}
+A vector, pdf of \equ{ Ga_{[\code{a},\code{b}]}(\code{x}; \code{shape_},\code{rate_}) }
 }
 \description{
-Calculate pdf of the truncated gamma \equ{Ga_{[\code{a},\code{b}]}(\code{shape_},\code{rate_})}
+Calculate pdf of the truncated gamma
 }

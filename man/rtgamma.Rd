@@ -2,7 +2,7 @@
 % Please edit documentation in R/prml_analysis.R
 \name{rtgamma}
 \alias{rtgamma}
-\title{Generate random variable from truncated gamma \equ{Ga_{[\code{a},\code{b}]}(\code{shape_},\code{rate_})}}
+\title{Generate random variable from truncated gamma}
 \usage{
 rtgamma(size, shape_, rate_, a, b)
 }
@@ -18,8 +18,8 @@ rtgamma(size, shape_, rate_, a, b)
 \item{b}{upper bound of the range}
 }
 \value{
-A vector, iid samples from \equ{Ga_{[\code{a},\code{b}]}(\code{shape_},\code{rate_})}
+A vector, iid samples from \equ{ Ga_{[\code{a},\code{b}]}(\code{shape_},\code{rate_}) }
 }
 \description{
-Generate random variable from truncated gamma \equ{Ga_{[\code{a},\code{b}]}(\code{shape_},\code{rate_})}
+Generate random variable from truncated gamma
 }

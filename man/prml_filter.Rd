@@ -13,7 +13,7 @@ prml_filter(xs_bn, n_gq = 20, n_per = 100, alpha = 0.5)
 
 \item{n_per}{A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.}
 
-\item{alpha}{0.5 by default. The range of the spike counts estimator \equ{[Y_{0.25}-\code{alpha}IQR,Y_{0.75}+\code{alpha}IQR]}}
+\item{alpha}{0.5 by default. The range of the spike counts estimator \equ{ [Y_{0.25}-\code{alpha}IQR,Y_{0.75}+\code{alpha}IQR] }}
 }
 \value{
 A number. Bayes factor of Poisson versus Poisson mixtures by PRML algorithm.

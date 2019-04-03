@@ -2,7 +2,7 @@
 % Please edit documentation in R/prml_analysis.R
 \name{prml_tests_f}
 \alias{prml_tests_f}
-\title{provide the density estimation of mixing density f and results from prml_tests.}
+\title{PRML classifier together with pdf of mixing density.}
 \usage{
 prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
   remove.zeros = FALSE, mu_l = "min", mu_u = "max", e = 0,
@@ -12,8 +12,15 @@ prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
 \arguments{
 \item{mu_u}{A number. 100 by default. The number of grids used to represent the pdf of f.}
 }
+\value{
+A list.
+\describe{
+  \item{out1}{Result of \code{prml_tests}}
+  \item{out2}{pdf of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
+}
+}
 \description{
-provide the density estimation of mixing density f and results from prml_tests.
+PRML classifier together with pdf of mixing density.
 }
 \seealso{
 \code{\link{prml_tests}}

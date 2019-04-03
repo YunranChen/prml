@@ -10,7 +10,7 @@ logsum(x)
 \item{x}{A vector.}
 }
 \value{
-the \eqn{\log(\text{sum}(\text{exp}(x)))}
+A number, the \eqn{ \text{log}(\text{sum}(\text{exp}(x))) }
 }
 \description{
 Calculate the log(sum(exp(x)))

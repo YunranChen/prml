@@ -2,7 +2,7 @@
 % Please edit documentation in R/prml_analysis.R
 \name{logmean}
 \alias{logmean}
-\title{Calculate the \eqn{\log(\text{mean}(\text{exp}(x)))}}
+\title{Calculate the log(mean(exp(x)))}
 \usage{
 logmean(x)
 }
@@ -10,8 +10,8 @@ logmean(x)
 \item{x}{A vector.}
 }
 \value{
-the log(mean(exp(x)))
+A number, the \eqn{ \text{log}(\text{mean}(\text{exp}(x))) }
 }
 \description{
-Calculate the \eqn{\log(\text{mean}(\text{exp}(x)))}
+Calculate the log(mean(exp(x)))
 }
