@@ -20,9 +20,9 @@ prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
 
 \item{remove.zeros}{A logical value. Whether to remove 0s in spike counts.}
 
-\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ \text{max}(0,\underset{j=A,B,AB}{\text{min}}(\text{min}(Y_j)-2\text{std}(Y_j))) }}
+\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,\underset{j=A,B,AB}{{min}}({min}(Y_j)-2{std}(Y_j))) }}
 
-\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{\text{max}}(\text{max}(Y_j)+2\text{std}(Y_j)) }}
+\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{{max}}({max}(Y_j)+2{std}(Y_j)) }}
 
 \item{e}{A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.}
 
@@ -34,7 +34,7 @@ prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
 
 \item{n_per}{A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.}
 
-\item{alpha}{0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\alpha \text{IQR},Y_{0.75}+\alpha \text{IQR}] }}
+\item{alpha}{0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\alpha {IQR},Y_{0.75}+\alpha {IQR}] }}
 }
 \value{
 A list.
