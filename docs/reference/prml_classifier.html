@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">prml</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.2</span>
       </span>
     </div>
 
@@ -143,11 +143,11 @@
     </tr>
     <tr>
       <th>mu_l</th>
-      <td><p>A number. Lower bound of spike counts. "min" by default. Indicating \( max(0,\underset{j=A,B,AB}{\min}(\min(Y_j)-2{std}(Y_j))) \)</p></td>
+      <td><p>A number. Lower bound of spike counts. "min" by default. Indicating \( max(0, min_{j=A,B,AB}(min(Y_j)-2{std}(Y_j))) \)</p></td>
     </tr>
     <tr>
       <th>mu_u</th>
-      <td><p>A number. Upper bound of spike counts. "max" by default. Indicating \( \underset{j=A,B,AB}{\max}(\max(Y_j)+2{std}(Y_j)) \)</p></td>
+      <td><p>A number. Upper bound of spike counts. "max" by default. Indicating \( {max_{j=A,B,AB}}(max(Y_j)+2{std}(Y_j)) \)</p></td>
     </tr>
     <tr>
       <th>e</th>

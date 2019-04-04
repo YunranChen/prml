@@ -20,9 +20,9 @@ prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
 
 \item{remove.zeros}{A logical value. Whether to remove 0s in spike counts.}
 
-\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,\underset{j=A,B,AB}{{min}}({min}(Y_j)-2{std}(Y_j))) }}
+\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,{min}{j=A,B,AB}({min}(Y_j)-2{std}(Y_j))) }}
 
-\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{{max}}({max}(Y_j)+2{std}(Y_j)) }}
+\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ max_{j=A,B,AB}({max}(Y_j)+2{std}(Y_j)) }}
 
 \item{e}{A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.}
 

@@ -511,8 +511,8 @@ prml_mix_lp <- function(xs_bn, xs_a, xs_b, e = 0, r_a = 0.5, s_a = 2e-10,
 #' @param xs_bn A vector. Spike counts of repeated dual-stimuli trial data AB.
 #' @param xs_a A vector. Spike counts of repeated single-stimulus trial data A.
 #' @param xs_b A vector. Spike counts of repeated single-stimulus trial data B.
-#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ max(0,\underset{j=A,B,AB}{\min}(\min(Y_j)-2{std}(Y_j))) }
-#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{j=A,B,AB}{\max}(\max(Y_j)+2{std}(Y_j)) }
+#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ max(0, min_{j=A,B,AB}(min(Y_j)-2{std}(Y_j))) }
+#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ {max_{j=A,B,AB}}(max(Y_j)+2{std}(Y_j)) }
 #' @param e A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.
 #' @param r_a A number. The parameter in gamma prior of spike rate mu_A. rate. Jeffereys' prior by default.
 #' @param s_a A number. The parameter in gamma prior of spike rate mu_A. shape. Jeffereys' prior by default.
@@ -568,8 +568,8 @@ log.pm <- function(x, a, b) {
 #' @param xAB A vector. Spike counts of repeated single-stimulus trial data B.
 #' @param labels A vector. labels for the trials.
 #' @param remove.zeros A logical value. Whether to remove 0s in spike counts.
-#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,\underset{j=A,B,AB}{{min}}({min}(Y_j)-2{std}(Y_j))) }
-#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{{max}}({max}(Y_j)+2{std}(Y_j)) }
+#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,min_{j=A,B,AB}({min}(Y_j)-2{std}(Y_j))) }
+#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ {max_{j=A,B,AB}}({max}(Y_j)+2{std}(Y_j)) }
 #' @param e A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.
 #' @param gamma.pars A length 2 vector. The shape and rate of gamma prior for spike rate mu_A and mu_B. Jeffereys' prior by default.
 #' @param n_gq A number. 20 by default. Number of grids in Gaussion quadrature.
@@ -1092,8 +1092,8 @@ prml_mix_lp_f <- function(xs_bn, xs_a, xs_b, e = 0, r_a = 0.5, s_a = 2e-10,
 #' @param xs_bn A vector. Spike counts of repeated dual-stimuli trial data AB.
 #' @param xs_a A vector. Spike counts of repeated single-stimulus trial data A.
 #' @param xs_b A vector. Spike counts of repeated single-stimulus trial data B.
-#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ max(0,\underset{j=A,B,AB}{\min}(\min(Y_j)-2{std}(Y_j))) }
-#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{j=A,B,AB}{\max}(\max(Y_j)+2{std}(Y_j)) }
+#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ max(0,min_{j=A,B,AB}(min(Y_j)-2{std}(Y_j))) }
+#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ max_{j=A,B,AB}(max(Y_j)+2{std}(Y_j)) }
 #' @param e A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.
 #' @param r_a A number. The parameter in gamma prior of spike rate mu_A. rate. Jeffereys' prior by default.
 #' @param s_a A number. The parameter in gamma prior of spike rate mu_A. shape. Jeffereys' prior by default.
@@ -1143,8 +1143,8 @@ prml_classifier_f <- function(xs_bn, xs_a, xs_b, mu_l = 0, mu_u = 180, e = 0, r_
 #' @param xAB A vector. Spike counts of repeated single-stimulus trial data B.
 #' @param labels A vector. labels for the trials.
 #' @param remove.zeros A logical value. Whether to remove 0s in spike counts.
-#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,\underset{j=A,B,AB}{{min}}({min}(Y_j)-2{std}(Y_j))) }
-#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{{max}}({max}(Y_j)+2{std}(Y_j)) }
+#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ {max}(0,{min}{j=A,B,AB}({min}(Y_j)-2{std}(Y_j))) }
+#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ max_{j=A,B,AB}({max}(Y_j)+2{std}(Y_j)) }
 #' @param e A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.
 #' @param gamma.pars A length 2 vector. The shape and rate of gamma prior for spike rate mu_A and mu_B. Jeffereys' prior by default.
 #' @param n_gq A number. 20 by default. Number of grids in Gaussion quadrature.
