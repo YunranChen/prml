@@ -31,7 +31,7 @@ prml_tests(xA, xB, xAB, labels = c("A", "B", "AB"),
 
 \item{n_per}{A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.}
 
-\item{alpha}{0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\code{alpha}\text{IQR},Y_{0.75}+\code{alpha}\text{IQR}] }}
+\item{alpha}{0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\alpha \text{IQR},Y_{0.75}+\alpha \text{IQR}] }}
 }
 \value{
 A list.

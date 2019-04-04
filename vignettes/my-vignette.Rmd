@@ -1,6 +1,6 @@
 ---
-title: "Vignette Title"
-author: "Vignette Author"
+title: "Real Data Analysis"
+author: "Yunran Chen"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -16,50 +16,279 @@ knitr::opts_chunk$set(
 )
 ```
 
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+**prml** is designed to implement the PRML classifier and PRML filter proposed by Chen and Tokdar (2019).
 
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+PRML classifier is a hypothesis testing for different types of Poisson mixtures. PRML filter is a hypothesis testing for screening out data with overdispersed Poisson. PRML classifier take second order stochasticity into consideration, helping neuroscientists to classify the activation patterns that a single neuron exhibits when preserving information from multiple stimuli. PRML filter contributes to avoid mistaking trial-to-trial variation as second order stochasticity.
 
-## Vignette Info
+For real data anlaysis, we only need to use function `prml_tests()`, which take the $\{Y^A,Y^B,Y^{AB}\}$ as input. $\{Y^A,Y^B,Y^{AB}\}$ represent spike count data coming from the repeated trials under condition $\{A,B,AB\}$ (single-stimulus trial A, B and dual-stimuli trial AB). We provide a sample code on
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+- how to extract the spike count triplets from the raw data;
+- how to use function `prml_tests()`; 
+- simple data visualization on the result. 
 
-## Styles
+If you want to obtain density estimation of the mixing density, replace `prml_tests()` with `prml_tests_f()` in the sample code. 
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+## Dataset
 
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
+The raw data is stored as .txt file pairs. One stores the experiment condition and corresponding condition id. The other stores the timepoints of spikes under experiment specified by the id. The raw data included within a pair of .txt files contains multiple experiment triplets. And there are multiple pairs within the folder.
 
-## Figures
+The following data shows:
 
-The figure sizes have been customised so that you can easily put two images side-by-side. 
+- `prml.from.tri()`: extract spike count triplets from a pair of .txt raw data under specified condition; and apply `prml_tests()` for each spike count triplet.
+- `prml.from.fname()`: apply `prml.from.tri()` under all possible conditions within a pair of .txt raw data.
+- apply `prml.from.fname()` for all pairs of .txt raw data within a folder. save the output as a .txt file.
 
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+## Preparation
+
+```{r,eval=FALSE,echo=TRUE}
+# devtools::install_github("yunranchen/prml")
+library(prml)
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+## Example for applying `prml_tests()`
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+The function `prml.from.tri()` is for:
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+- Under specified triplets condition $\{A,B,AB\}$, extract spike count triplets from two dataframes `trials` (storing information of triplets condition) and `spiketimes` (storing the timepoints of spikes within trials). 
+- Apply `prml_test()` on the spike count triplets.
 
-## More Examples
 
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+```{r,eval=FALSE,echo=TRUE}
 
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+prml.from.tri <- function(trials, spiketimes, frq = c(1100, 742),
+                       pos = c(24, -6), on.reward = TRUE, start.time = 0, end.time = 600,
+                       match.level = FALSE, AB.eqlevel = FALSE, go.by.soff = FALSE, ...){
+
+  attach(trials)
+  attach(spiketimes)
+
+  timestamps <- split(TIMES, TRIAL2)
+  ntrials <- length(timestamps)
+  trial.id <- as.numeric(names(timestamps)) 
+
+  ix1 <- TASKID == 8 & A_FREQ == frq[1] & XA == pos[1]
+  ix2 <- TASKID == 8 & A_FREQ == frq[2] & XA == pos[2]
+  ix3 <- TASKID == 12 & (A_FREQ == frq[1] & B_FREQ == frq[2] & XA == pos[1] & XB == pos[2]) | (A_FREQ == frq[2] & B_FREQ == frq[1] & XA == pos[2] & XB == pos[1])
+
+  if(on.reward){
+    ix1 <- ix1 & REWARD == 1
+    ix2 <- ix2 & REWARD == 1
+    ix3 <- ix3 & REWARD == 1
+  }
+
+  blev <- sort(unique(B_LEVEL[ix3]))
+  targ.lev <- blev[blev > 0]
+  lev <- "*"
+  if(match.level) {
+    if(length(targ.lev) > 1) {
+      targ.lev <- max(targ.lev)
+      warning("Multiple single sound levels, choosing largest one")
+    }
+    ix1 <- ix1 & A_LEVEL == targ.lev
+    ix2 <- ix2 & A_LEVEL == targ.lev
+    lev <- as.character(targ.lev)
+  }
+
+  if(AB.eqlevel) ix3 <- ix3 & (A_LEVEL == B_LEVEL)
+
+  sing1 <- trials[ix1, 1]
+  sing2 <- trials[ix2, 1]
+  duplx <- trials[ix3, 1]
+  success <- REWARD[ix3]
+
+  if(go.by.soff) end.time <- min(SOFF[ix1 | ix2 | ix3])
+
+  spike.counter <- function(jj){
+    jj1 <- match(jj, trial.id)
+    spks <- timestamps[[jj1]]
+    return(sum(spks > start.time & spks < end.time))
+  }
+
+  Acounts <- sapply(sing1, spike.counter)
+  Bcounts <- sapply(sing2, spike.counter)
+  ABcounts <- sapply(duplx, spike.counter)
+
+  detach(trials)
+  detach(spiketimes)
+
+
+  s1 <- paste(frq[1],"Hz ",pos[1],"deg ",lev,"Db ", sep = "")
+  s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
+  dp <- paste("Duplex: ", lev, "Db ", sep = "")
+  
+  res=prml_tests(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0)
+
+  return(res)
+}
+
 ```
 
-Also a quote using `>`:
+The function  `prml.from.fname()` is for:
 
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
+- Find all possible conditions within a pair of .txt files
+- apply `prml.from.tri()` under all possible triplets
+
+
+```{r,eval=FALSE,echo=TRUE}
+prml.from.fname <- function(fname, data.path = "Data", on.reward = TRUE,
+                   match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
+                   start = 0, end = 600, remove.zeros = FALSE){
+
+  infile1 <- paste(data.path, "/JA/", fname, ".txt", sep = "")
+  
+  trials <- read.table(infile1, col.names = c("TRIAL", "TASKID", "A_FREQ", "B_FREQ", "XA", "XB", "REWARD", "A_LEVEL", "B_LEVEL"))
+
+  infile2 <- paste(data.path, "/JA/", fname, "_spiketimes.txt", sep = "")
+  
+  spiketimes <- read.table(infile2, col.names = c("TRIAL2", "TIMES"))
+
+  FREQS <- unique(c(trials$A_FREQ, trials$B_FREQ))
+  alt.freq <- sort(FREQS[FREQS > 0 & FREQS != 742])
+  alt.pos <- c(-24, -6, 6, 24)
+
+  par(mfcol = c(length(alt.freq),2), mar = c(2,3,3,0) + .1)
+
+  for(fr in alt.freq){
+    for(po in alt.pos){
+      try({lbf <-prml.from.tri(trials, spiketimes, c(fr, 742), c(po, -144/po), on.reward, start, end, match.level, AB.eqlevel, go.by.soff=FALSE, remove.zeros)%>%unlist(.);
+      cat(fname, c(fr, po, lbf), "\n", file = outfile, append = TRUE);
+      })
+    }
+  }
+}
+
+```
+
+The foor loop is for:
+
+- apply `prml.from.fname()` for all pairs of .txt files within the folder.
+
+```{r,eval=FALSE,echo=TRUE}
+set.seed(123)
+ja.fnames=scan("JA230_list_randomly_interleaved.txt", "a")
+for (ja.name in ja.fnames){
+  try(prml.from.fname(ja.name, data.path = "Data", on.reward = TRUE,
+              match.level = FALSE, AB.eqlevel = FALSE, outfile = "JA.txt",
+              start = 0, end = 600, remove.zeros = FALSE))
+}
+
+```
+
+## Example for applying `prml_tests_f()`
+
+- `prml.from.tri.f()`: replace `prml_tests()` in `prml.from.tri()` with `prml_tests_f()`
+- `prml.from.fname.f()`: apply `prml.from.tri.f()` and output the density estimation in a separate .txt file.
+
+```{r,eval=FALSE,echo=TRUE}
+prml.from.tri.f <- function(trials, spiketimes, frq = c(1100, 742),
+                       pos = c(24, -6), on.reward = TRUE, start.time = 0, end.time = 600,
+                       match.level = FALSE, AB.eqlevel = FALSE, go.by.soff = FALSE, ...){
+
+  attach(trials)
+  attach(spiketimes)
+
+  timestamps <- split(TIMES, TRIAL2)
+  ntrials <- length(timestamps)
+  trial.id <- as.numeric(names(timestamps)) ## same as unique(TRIAL2)
+
+  ix1 <- TASKID == 8 & A_FREQ == frq[1] & XA == pos[1]
+  ix2 <- TASKID == 8 & A_FREQ == frq[2] & XA == pos[2]
+  ix3 <- TASKID == 12 & (A_FREQ == frq[1] & B_FREQ == frq[2] & XA == pos[1] & XB == pos[2]) | (A_FREQ == frq[2] & B_FREQ == frq[1] & XA == pos[2] & XB == pos[1])
+
+  if(on.reward){
+    ix1 <- ix1 & REWARD == 1
+    ix2 <- ix2 & REWARD == 1
+    ix3 <- ix3 & REWARD == 1
+  }
+
+  blev <- sort(unique(B_LEVEL[ix3]))
+  targ.lev <- blev[blev > 0]
+  lev <- "*"
+  if(match.level) {
+    if(length(targ.lev) > 1) {
+      targ.lev <- max(targ.lev)
+      warning("Multiple single sound levels, choosing largest one")
+    }
+    ix1 <- ix1 & A_LEVEL == targ.lev
+    ix2 <- ix2 & A_LEVEL == targ.lev
+    lev <- as.character(targ.lev)
+  }
+
+  if(AB.eqlevel) ix3 <- ix3 & (A_LEVEL == B_LEVEL)
+
+  sing1 <- trials[ix1, 1]
+  sing2 <- trials[ix2, 1]
+  duplx <- trials[ix3, 1]
+  success <- REWARD[ix3]
+
+  if(go.by.soff) end.time <- min(SOFF[ix1 | ix2 | ix3])
+
+  spike.counter <- function(jj){
+    jj1 <- match(jj, trial.id)
+    spks <- timestamps[[jj1]]
+    return(sum(spks > start.time & spks < end.time))
+  }
+
+  Acounts <- sapply(sing1, spike.counter)
+  Bcounts <- sapply(sing2, spike.counter)
+  ABcounts <- sapply(duplx, spike.counter)
+
+  detach(trials)
+  detach(spiketimes)
+
+
+  s1 <- paste(frq[1],"Hz ",pos[1],"deg ",lev,"Db ", sep = "")
+  s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
+  dp <- paste("Duplex: ", lev, "Db ", sep = "")
+  res=prml_tests_f(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0)
+  return(res)
+}
+
+```
+
+```{r,eval=FALSE,echo=TRUE}
+prml.from.fname.f <- function(fname, data.path = "Data", on.reward = TRUE,
+                        match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
+                        start = 0, end = 600, remove.zeros = FALSE){
+
+  infile1 <- paste(data.path, "/JA/", fname, ".txt", sep = "")
+  
+  trials <- read.table(infile1, col.names = c("TRIAL", "TASKID", "A_FREQ", "B_FREQ", "XA", "XB", "REWARD", "A_LEVEL", "B_LEVEL"))
+
+  infile2 <- paste(data.path, "/JA/", fname, "_spiketimes.txt", sep = "")
+  spiketimes <- read.table(infile2, col.names = c("TRIAL2", "TIMES"))
+
+  FREQS <- unique(c(trials$A_FREQ, trials$B_FREQ))
+  alt.freq <- sort(FREQS[FREQS > 0 & FREQS != 742])
+  alt.pos <- c(-24, -6, 6, 24)
+
+  par(mfcol = c(length(alt.freq),2), mar = c(2,3,3,0) + .1)
+
+  for(fr in alt.freq){
+    for(po in alt.pos){
+      try({lbf <-prml.from.tri.f(trials, spiketimes, c(fr, 742), c(po, -144/po),
+                            on.reward, start, end, match.level, AB.eqlevel,
+                            remove.zeros);
+      cat(fname, c(fr, po, unlist(lbf$out1)), "\n", file = outfile, append = TRUE);
+      cat(fname, c(fr, po, lbf$out2$mix_pf), "\n", file = paste0("mix",outfile), append = TRUE);
+      cat(fname, "int", c(fr, po, lbf$out2$int_pf), "\n", file = paste0("int_out",outfile), append = TRUE);
+      cat(fname, "outA", c(fr, po, lbf$out2$outA_pf), "\n", file = paste0("int_out",outfile), append = TRUE);
+      cat(fname, "outB", c(fr, po, lbf$out2$outB_pf), "\n", file = paste0("int_out",outfile), append = TRUE);
+      })
+    }
+  }
+}
+
+```
+
+```{r,eval=FALSE,echo=TRUE}
+set.seed(123)
+ja.fnames=scan("JA230_list_randomly_interleaved.txt", "a")
+for (ja.name in ja.fnames){
+  try(prml.from.fname.f(ja.name, data.path = "Data", on.reward = TRUE,
+              match.level = FALSE, AB.eqlevel = FALSE, outfile = "JA.txt",
+              start = 0, end = 600, remove.zeros = FALSE))
+}
+```
+
+

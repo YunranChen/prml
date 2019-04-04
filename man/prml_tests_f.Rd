@@ -2,7 +2,7 @@
 % Please edit documentation in R/prml_analysis.R
 \name{prml_tests_f}
 \alias{prml_tests_f}
-\title{PRML classifier together with pdf of mixing density.}
+\title{PRML filter and PRML classifier together with density estimation of mixing density.}
 \usage{
 prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
   remove.zeros = FALSE, mu_l = "min", mu_u = "max", e = 0,
@@ -10,17 +10,41 @@ prml_tests_f(xA, xB, xAB, labels = c("A", "B", "AB"),
   alpha = 0.5)
 }
 \arguments{
-\item{mu_u}{A number. 100 by default. The number of grids used to represent the pdf of f.}
+\item{xA}{A vector. Spike counts of repeated dual-stimuli trial data AB.}
+
+\item{xB}{A vector. Spike counts of repeated single-stimulus trial data A.}
+
+\item{xAB}{A vector. Spike counts of repeated single-stimulus trial data B.}
+
+\item{labels}{A vector. labels for the trials.}
+
+\item{remove.zeros}{A logical value. Whether to remove 0s in spike counts.}
+
+\item{mu_l}{A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ \text{max}(0,\underset{j=A,B,AB}{\text{min}}(\text{min}(Y_j)-2\text{std}(Y_j))) }}
+
+\item{mu_u}{A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{\text{max}}(\text{max}(Y_j)+2\text{std}(Y_j)) }}
+
+\item{e}{A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.}
+
+\item{gamma.pars}{A length 2 vector. The shape and rate of gamma prior for spike rate mu_A and mu_B. Jeffereys' prior by default.}
+
+\item{n_gq}{A number. 20 by default. Number of grids in Gaussion quadrature.}
+
+\item{n_mu}{A number. 100 by default. The number of grids used to represent the pdf of f.}
+
+\item{n_per}{A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.}
+
+\item{alpha}{0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\alpha \text{IQR},Y_{0.75}+\alpha \text{IQR}] }}
 }
 \value{
 A list.
 \describe{
   \item{out1}{Result of \link{prml_tests}}
-  \item{out2}{pdf of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
+  \item{out2}{density estimation of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
 }
 }
 \description{
-PRML classifier together with pdf of mixing density.
+PRML filter and PRML classifier together with density estimation of mixing density.
 }
 \seealso{
 \code{\link{prml_tests}}

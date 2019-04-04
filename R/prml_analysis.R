@@ -517,7 +517,7 @@ prml_mix_lp <- function(xs_bn, xs_a, xs_b, e = 0, r_a = 0.5, s_a = 2e-10,
 #'   \item{post.prob}{posterior probabilities under Mixture, Intermediate, Outside, Single hypotheses.}
 #'   \item{win.model}{the model has largest post.prob.}
 #' }
-prml.mix <- function(xs_bn, xs_a, xs_b, mu_l = "min", mu_u = "max", e = 0,
+prml_classifier <- function(xs_bn, xs_a, xs_b, mu_l = "min", mu_u = "max", e = 0,
                      r_a = 0.5, s_a = 2e-10, r_b = 0.5, s_b = 2e-10, n_gq = 20, n_per = 100) {
     if (mean(xs_a) <= mean(xs_b)) {
         outA <- prml_outA_lp(xs_bn, xs_a, r_a, s_a, mu_l, n_gq, n_per)
@@ -565,7 +565,7 @@ log.pm <- function(x, a, b) {
 #' @param gamma.pars A length 2 vector. The shape and rate of gamma prior for spike rate mu_A and mu_B. Jeffereys' prior by default.
 #' @param n_gq A number. 20 by default. Number of grids in Gaussion quadrature.
 #' @param n_per A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.
-#' @param alpha 0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\code{alpha}\text{IQR},Y_{0.75}+\code{alpha}\text{IQR}] }
+#' @param alpha 0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\alpha \text{IQR},Y_{0.75}+\alpha \text{IQR}] }
 #' @return A list.
 #' \describe{
 #'   \item{separation.logBF}{log Bayes factor for the hypothesis \eqn{ mu_A=mu_B } versus \eqn{ mu_A \neq mu_B }.}
@@ -602,7 +602,7 @@ prml_tests <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.zeros = F
     lbf.pure <- mean(c(outer(1:length(xA), 1:length(xB), two.poi.ibf)))
 
     pvls <- c(prml_filter(xA, n_gq, n_per, alpha), prml_filter(xB, n_gq, n_per, alpha))
-    prmlmix_res <- prml.mix(xAB, xA, xB, mu_l, mu_u, e, r_a, s_a, r_b, s_b, n_gq, n_per)
+    prmlmix_res <- prml_classifier(xAB, xA, xB, mu_l, mu_u, e, r_a, s_a, r_b, s_b, n_gq, n_per)
     out <- list(separation.logBF = lbf.pure, post.prob = prmlmix_res$post.prob,
                 win.model = prmlmix_res$win.model, prml.filter.bf = pvls,
                 samp.sizes = c(nA, nB, nAB))
@@ -1078,7 +1078,27 @@ prml_mix_lp_f <- function(xs_bn, xs_a, xs_b, e = 0, r_a = 0.5, s_a = 2e-10,
     return(res)
 }
 
-prml_mix_f <- function(xs_bn, xs_a, xs_b, mu_l = 0, mu_u = 180, e = 0, r_a = 0.5, s_a = 2e-10,
+#' PRML classifier together with density estimation of mixing density.
+#' @param xs_bn A vector. Spike counts of repeated dual-stimuli trial data AB.
+#' @param xs_a A vector. Spike counts of repeated single-stimulus trial data A.
+#' @param xs_b A vector. Spike counts of repeated single-stimulus trial data B.
+#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ max(0,\underset{j=A,B,AB}{\min}(\min(Y_j)-2\text{std}(Y_j))) }
+#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{j=A,B,AB}{\max}(\max(Y_j)+2\text{std}(Y_j)) }
+#' @param e A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.
+#' @param r_a A number. The parameter in gamma prior of spike rate mu_A. rate. Jeffereys' prior by default.
+#' @param s_a A number. The parameter in gamma prior of spike rate mu_A. shape. Jeffereys' prior by default.
+#' @param r_b A number. The parameter in gamma prior of spike rate mu_B. rate. Jeffereys' prior by default.
+#' @param s_b A number. The parameter in gamma prior of spike rate mu_B. shape. Jeffereys' prior by default.
+#' @param n_gq A number. 20 by default. Number of grids in Gaussion quadrature.
+#' @param n_mu A number. 100 by default. The number of grids used to represent the pdf of f.
+#' @param n_per A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.
+#' @return A list.
+#' \describe{
+#'   \item{out1}{Result of \link{prml_tests}}
+#'   \item{out2}{density estimation of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
+#' }
+#' @seealso \code{\link{prml_classifier}}
+prml_classifier_f <- function(xs_bn, xs_a, xs_b, mu_l = 0, mu_u = 180, e = 0, r_a = 0.5, s_a = 2e-10,
                        r_b = 0.5, s_b = 2e-10, n_gq = 20, n_mu = 100, n_per = 100) {
     if (mean(xs_a) <= mean(xs_b)) {
         outA <- prml_outA_lp_f(xs_bn, xs_a, r_a, s_a, mu_l, n_gq, n_mu, n_per)
@@ -1106,16 +1126,26 @@ prml_mix_f <- function(xs_bn, xs_a, xs_b, mu_l = 0, mu_u = 180, e = 0, r_a = 0.5
     return(out)
 }
 
-#' PRML classifier together with pdf of mixing density.
-#'
-#' @param mu_u A number. 100 by default. The number of grids used to represent the pdf of f.
+#' PRML filter and PRML classifier together with density estimation of mixing density.
+#' @param xA A vector. Spike counts of repeated dual-stimuli trial data AB.
+#' @param xB A vector. Spike counts of repeated single-stimulus trial data A.
+#' @param xAB A vector. Spike counts of repeated single-stimulus trial data B.
+#' @param labels A vector. labels for the trials.
+#' @param remove.zeros A logical value. Whether to remove 0s in spike counts.
+#' @param mu_l A number. Lower bound of spike counts. "min" by default. Indicating \eqn{ \text{max}(0,\underset{j=A,B,AB}{\text{min}}(\text{min}(Y_j)-2\text{std}(Y_j))) }
+#' @param mu_u A number. Upper bound of spike counts. "max" by default. Indicating \eqn{ \underset{ j=A,B,AB }{\text{max}}(\text{max}(Y_j)+2\text{std}(Y_j)) }
+#' @param e A number. 0 by default. Shringkage on the domain and meansurement of mixing density f under the Intermediate and Mixture hypothese.
+#' @param gamma.pars A length 2 vector. The shape and rate of gamma prior for spike rate mu_A and mu_B. Jeffereys' prior by default.
+#' @param n_gq A number. 20 by default. Number of grids in Gaussion quadrature.
+#' @param n_mu A number. 100 by default. The number of grids used to represent the pdf of f.
+#' @param n_per A number. 100 by default. Permutation of likihood estimation to obtain the order-invariant estimator.
+#' @param alpha 0.5 by default. (For PRML filter) The range of the spike counts estimator \eqn{ [Y_{0.25}-\alpha \text{IQR},Y_{0.75}+\alpha \text{IQR}] }
 #' @return A list.
 #' \describe{
 #'   \item{out1}{Result of \link{prml_tests}}
-#'   \item{out2}{pdf of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
+#'   \item{out2}{density estimation of mixing density f under Mixture, Intermediate, OutsideA, OutsideB hypotheses}
 #' }
 #' @seealso \code{\link{prml_tests}}
-
 prml_tests_f <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.zeros = FALSE,
                          mu_l = "min", mu_u = "max", e = 0, gamma.pars = c(0.5, 2e-10),
                          n_gq = 20, n_mu = 100, n_per = 100, alpha = 0.5) {
@@ -1145,7 +1175,7 @@ prml_tests_f <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.zeros =
 
     pvls <- c(prml_filter(xA, n_gq, n_per, alpha),
               prml_filter(xB, n_gq, n_per, alpha))
-    prmlmix_res <- prml_mix_f(xAB, xA, xB, mu_l, mu_u, e,
+    prmlmix_res <- prml_classifier_f(xAB, xA, xB, mu_l, mu_u, e,
                               r_a, s_a, r_b, s_b, n_gq, n_mu, n_per)
     out1 <- list(separation.logBF = lbf.pure, post.prob = prmlmix_res$post.prob,
                  win.model = prmlmix_res$win.model, prml.filter.bf = pvls,
