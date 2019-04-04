@@ -43,6 +43,9 @@ The following data shows:
 ```{r,eval=FALSE,echo=TRUE}
 # devtools::install_github("yunranchen/prml")
 library(prml)
+library("statmod")
+library("dplyr")
+library("purrr")
 ```
 
 ## Example for applying `prml_tests()`
