@@ -1,4 +1,3 @@
-# logsum and logmean
 #' Calculate the log(sum(exp(x)))
 #'
 #' @param x A vector.

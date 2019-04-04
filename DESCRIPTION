@@ -2,7 +2,7 @@ Package: prml
 Type: Package
 Title: An implementation of PRML classifier and PRML filter
 Version: 0.1.0
-Author: person("Yunran", "Chen", email = "yunran.chen@duke.edu", 
+Authors@R: person("Yunran", "Chen", email = "yunran.chen@duke.edu", 
   role = c("aut", "cre"))
 Maintainer: Yunran Chen <yunran.chen@duke.edu>
 Description: The package provides: (1) PRML classifier to test between types of 
