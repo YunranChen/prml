@@ -276,10 +276,10 @@ prml.from.fname.f <- function(fname, data.path = "Data", on.reward = TRUE,
                             on.reward, start, end, match.level, AB.eqlevel,
                             remove.zeros);
       cat(fname, c(fr, po, unlist(lbf$out1)), "\n", file = outfile, append = TRUE);
-      cat("mix", fname, c(fr, po, lbf$out2$mix_pf), "\n", file = paste0("mix",outfile), append = TRUE);
-      cat("int", fname, c(fr, po, lbf$out2$int_pf), "\n", file = paste0("int_out",outfile), append = TRUE);
-      cat("outA", fname, c(fr, po, lbf$out2$outA_pf), "\n", file = paste0("int_out",outfile), append = TRUE);
-      cat("outB", fname, c(fr, po, lbf$out2$outB_pf), "\n", file = paste0("int_out",outfile), append = TRUE);
+      cat("mix", fname, c(fr, po, lbf$out2$mix_pf), "\n", file = paste0("mix_",outfile), append = TRUE);
+      cat("int", fname, c(fr, po, lbf$out2$int_pf), "\n", file = paste0("int_out_",outfile), append = TRUE);
+      cat("outA", fname, c(fr, po, lbf$out2$outA_pf), "\n", file = paste0("int_out_",outfile), append = TRUE);
+      cat("outB", fname, c(fr, po, lbf$out2$outB_pf), "\n", file = paste0("int_out_",outfile), append = TRUE);
       })
     }
   }
@@ -306,10 +306,10 @@ for (file.name in fnames){
 #read the raw data
 raw=read.table(file = "result.txt",header = FALSE,sep = " ",stringsAsFactors = FALSE,fill = TRUE)%>%
   mutate(e=0)%>% #plug in the value of e you set in prml_tests()
-  select(-V17)
-names(raw)=c("CellId",	"Freq1", "Freq2", "Vloc","Aloc","SepBF", "PrMix", "PrInt", "PrOut", "PrSing",	"WinModels", "Pval1",	"Pval2", "SampSizeA", "SampSizeB", "SampSizeAB","e")
+  select(-V15)
+names(raw)=c("CellId",	"AltFreq",	"AltPos",	"SepBF", "PrMix", "PrInt", "PrOut", "PrSing",	"WinModels", "Pval1",	"Pval2", "SampSizeA", "SampSizeB", "SampSizeAB","e")
 model.names=c("Mixture","Intermediate","Outside","Single")
-raw=raw%>%mutate(cid=paste(CellId,Freq1,Freq2,Vloc,Aloc,sep = "."))
+raw=raw%>%mutate(cid=paste(CellId,AltFreq,AltPos,sep = "."))
 #filter out data that has errors
 cids=raw%>%filter(!WinModels%in%c(1:4))%>%pull(cid)
 rawf=raw%>%filter(!cid%in%cids)%>%
@@ -326,7 +326,7 @@ tri_filter=tri_unfilter %>%
   mutate(invPval1=1/Pval1,invPval2=1/Pval2)%>%
   filter(invPval1<=20,invPval2<=20)%>% #filter by PRML filter.
   dplyr::select(-invPval1,-invPval2)
-  
+
 tri=rbind(tri_unfilter,tri_filter)%>%
   mutate(group=rep(c("unfiltered","filtered"),
                    c(nrow(tri_unfilter),nrow(tri_filter))))%>%
@@ -342,14 +342,17 @@ Visualization
 library("ggplot2")
 
 ggplot(data = tri,mapping = aes(x = WinModel,color=WinProb,fill=WinProb))+
-  geom_bar(stat="count",position = "stack",alpha=0.5)+
+  geom_bar(stat="count",position = "stack")+
   facet_grid(~group)+
   geom_text(stat='count', aes(label=..count..), position = position_stack(vjust = 0.5),size=3,color="black")+
-  scale_colour_grey(start = 0.9,end=0.3) + #if you use grey color
-  scale_fill_grey(start = 0.9,end=0.3)
-ggsave(filename = "plot.pdf",width = 12,height = 8)
+  scale_x_discrete(drop=FALSE) +
+  scale_colour_grey(start = 0.9,end=0.3,drop=FALSE) + #if you use grey color
+  scale_fill_grey(start = 0.9,end=0.3,drop=FALSE) +
+  theme_bw()
+ggsave(filename = "plot.pdf",width = 8,height = 4)
 
 ```
+
 
 ## Visualization of the density estimation
 
@@ -360,14 +363,14 @@ Read all the data to data.frame.
 e_=0 # the value of e 
 
 #int and out
-int=read.table("int_outresult.txt",stringsAsFactors = F,header = F)%>%
+int=read.table("int_out_result.txt",stringsAsFactors = F,header = F)%>%
   mutate(e=e_)%>%
-  mutate(cid=paste(V2,V3,V4,V5,sep = "."))
+  mutate(cid=paste(V2,V3,V4,sep = "."))
 
 #mix
-mix=read.table("mixresult.txt",stringsAsFactors = F,header = F)%>%
-  mutate(e=e_,V7=e_+(1-2*e_)*V7,V8=e_+(1-2*e_)*V8))%>%
-  mutate(cid=paste(V2,V3,V4,V5,sep = ".")) 
+mix=read.table("mix_result.txt",stringsAsFactors = F,header = F)%>%
+  mutate(e=e_,V5=e_+(1-2*e_)*V5,V6=e_+(1-2*e_)*V6)%>%
+  mutate(cid=paste(V2,V3,V4,sep = ".")) 
 
 #cid is id for the triplets. It can help you specify the triplets you would like to include.
 
@@ -379,39 +382,40 @@ Here I only provides visualization on the density estimation of mixing density u
 # Here I draw the filtered triplets.
 
 dfres=tri%>%
-  filter(group=="filtered")%>%
-  mutate(cid=paste(CellId,PairId,AltFreq,AltPos,sep = "."))
+  filter(group=="filtered")
 
 ids=dfres%>%pull(cid)
 
-pdf(height = 5, width = 10, file = "plot_pdf.pdf")
+pdf(height = 3, width = 5, file = "plot_pdf.pdf")
 for (i in ids){
-try({
-int0=int%>%filter(cid==i,V1=="int")%>%.[,7:106]%>%t()
-df1=data.frame(ind=seq(e_,1-e_,length.out = 100),y=int0,e=rep(e_,100),model=rep("int",100))
-mix0=mix%>%filter(cid==i)%>%.[,c(7,8)]%>%t()
-df2=data.frame(ind=c(0,1),y=mix0,e=rep(0,2))
-p=ggplot(data = df1,mapping = aes(x=ind,y=y))+
-  geom_line()+
-  facet_grid(.~e)+
-  geom_point(data=df2,mapping = aes(x=ind,y=y))+
-  geom_hline(yintercept = e_,linetype="dashed")+
-  geom_hline(yintercept = 1-e_,linetype="dashed")+
-  geom_vline(xintercept = e_,linetype="dashed")+
-  geom_vline(xintercept = 1-e_,linetype="dashed")+
-  ggtitle(paste0(i,";"),
-          paste0(dfres%>%filter(cid==i)%>%pull(WinModel),
-                 ";SizeA:",
-                 dfres%>%filter(cid==i)%>%pull(SampSizeA),
-                 ";SizeB:",
-                 dfres%>%filter(cid==i)%>%pull(SampSizeB),
-                 ";SizeAB:",
-                 dfres%>%filter(cid==i)%>%pull(SampSizeAB),
-                 ";WinProb:",
-                 dfres%>%filter(cid==i)%>%pull(WinPr)%>%round(.,4)
-                 ))
-  print(p)
-})
+  try({
+    int0=int%>%filter(cid==i,V1=="int")%>%.[,5:104]%>%t()
+    df1=data.frame(ind=seq(e_,1-e_,length.out = 100),y=int0,e=rep(e_,100),model=rep("int",100))
+    mix0=mix%>%filter(cid==i)%>%.[,c(5,6)]%>%t()
+    df2=data.frame(ind=c(0,1),y=mix0,e=rep(0,2))
+    p=ggplot(data = df1,mapping = aes(x=ind,y=y))+
+      geom_line()+
+      #facet_grid(.~e)+
+      geom_point(data=df2,mapping = aes(x=ind,y=y))+
+      geom_hline(yintercept = e_,linetype="dashed")+
+      geom_hline(yintercept = 1-e_,linetype="dashed")+
+      geom_vline(xintercept = e_,linetype="dashed")+
+      geom_vline(xintercept = 1-e_,linetype="dashed")+
+      ggtitle(paste0(i,";"),
+              paste0(dfres%>%filter(cid==i)%>%pull(WinModel),
+                     ";WinProb:",
+                     dfres%>%filter(cid==i)%>%pull(WinPr)%>%round(.,4),
+                     ";SizeA:",
+                     dfres%>%filter(cid==i)%>%pull(SampSizeA),
+                     ";SizeB:",
+                     dfres%>%filter(cid==i)%>%pull(SampSizeB),
+                     ";SizeAB:",
+                     dfres%>%filter(cid==i)%>%pull(SampSizeAB)
+              ))+
+      theme_bw()+
+      xlab("")
+    print(p)
+  })
 }
 dev.off()
 
