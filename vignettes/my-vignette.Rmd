@@ -165,7 +165,7 @@ prml.from.fname <- function(fname, data.path = "Data", on.reward = TRUE,
 
 ```
 
-The foor loop is for:
+The for loop is for:
 
 - apply `prml.from.fname()` for all pairs of .txt files within the folder.
 
