@@ -7,6 +7,9 @@ vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+resource_files:
+  - images/plot.png
+  - images/plot_pdf.png
 ---
 
 ```{r setup, include = FALSE}
@@ -353,6 +356,10 @@ ggsave(filename = "plot.pdf",width = 8,height = 4)
 
 ```
 
+```{r, echo=FALSE}
+knitr::include_graphics("images/plot.png")
+```
+
 
 ## Visualization of the density estimation
 
@@ -421,4 +428,6 @@ dev.off()
 
 ```
 
-
+```{r, echo=FALSE}
+knitr::include_graphics("images/plot_pdf.png")
+```

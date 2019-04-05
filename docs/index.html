@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="An Implementation of PRML Classifier and PRML Filter">
-<meta property="og:description" content="The package provides: (1) PRML classifier to test between types of 
+<meta property="og:description" content="This package provides: (1) PRML classifier to test between types of 
     Poisson mixtures. It helps to classify the activation patterns that a single 
     neuron exhibits when preserving information from multiple stimuli. (2) PRML 
     filter to test Poisson versus Poisson mixtures. It helps to screen out 
@@ -87,7 +87,7 @@
 <div id="overview" class="section level2">
 <h2 class="hasAnchor">
 <a href="#overview" class="anchor"></a>Overview</h2>
-<p><strong>prml</strong> is designed to implement the PRML classifier and PRML filter proposed by Chen and Tokdar (2019).</p>
+<p>This package is designed to implement the PRML classifier and PRML filter proposed by Chen and Tokdar (2019).</p>
 <ul>
 <li>
 <code><a href="reference/prml_filter.html">prml_filter()</a></code> calculate Bayes factor of Poisson versus Poisson mixtures.</li>
@@ -125,6 +125,14 @@
 <h2 class="hasAnchor">
 <a href="#development-version" class="anchor"></a>Development version</h2>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">devtools<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/devtools/topics/reexports">install_github</a></span>(<span class="st">"yunranchen/prml"</span>)</a></code></pre></div>
+</div>
+<div id="result" class="section level2">
+<h2 class="hasAnchor">
+<a href="#result" class="anchor"></a>Result</h2>
+<p>A classification on the four possible hypotheses before PRML filtering and after PRML filtering process.</p>
+<p><img src="articles/images/plot.png"><!-- --></p>
+<p>A density estimation on the mixing density function. (Here only present the ‘Mixture’ and ‘Intermediate’ hypotheses.)</p>
+<p><img src="articles/images/plot_pdf.png"><!-- --></p>
 </div>
   </div>
 

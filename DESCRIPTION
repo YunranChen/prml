@@ -5,7 +5,7 @@ Version: 0.1.2
 Authors@R: person("Yunran", "Chen", email = "yunran.chen@duke.edu", 
   role = c("aut", "cre"))
 Maintainer: Yunran Chen <yunran.chen@duke.edu>
-Description: The package provides: (1) PRML classifier to test between types of 
+Description: This package provides: (1) PRML classifier to test between types of 
     Poisson mixtures. It helps to classify the activation patterns that a single 
     neuron exhibits when preserving information from multiple stimuli. (2) PRML 
     filter to test Poisson versus Poisson mixtures. It helps to screen out 

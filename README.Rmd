@@ -3,6 +3,9 @@ title: "README"
 author: "YunranChen"
 date: "4/3/2019"
 output: html_document
+resource_files:
+  - vignettes/images/plot.png
+  - vignettes/images/plot_pdf.png
 ---
 
 ```{r setup, include=FALSE}
@@ -11,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Overview
 
-**prml** is designed to implement the PRML classifier and PRML filter proposed by Chen and Tokdar (2019).
+This package is designed to implement the PRML classifier and PRML filter proposed by Chen and Tokdar (2019).
 
 - `prml_filter()` calculate Bayes factor of Poisson versus Poisson mixtures.
 - `prml_classifier()` calculate posterior probabilities under each Poisson mixtures hypotheses.
@@ -39,5 +42,20 @@ install.packages("prml")
 
 ```{r,echo=TRUE, eval=FALSE}
 devtools::install_github("yunranchen/prml")
+```
+
+## Result
+
+A classification on the four possible hypotheses before PRML filtering and after PRML filtering process.
+
+```{r, echo=FALSE}
+knitr::include_graphics("vignettes/images/plot.png")
+```
+
+
+A density estimation on the mixing density function. (Here only present the 'Mixture' and 'Intermediate' hypotheses.)
+
+```{r, echo=FALSE}
+knitr::include_graphics("vignettes/images/plot_pdf.png")
 ```
 
