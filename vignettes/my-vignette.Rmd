@@ -62,8 +62,9 @@ The function `prml.from.tri()` is for:
 ```{r,eval=FALSE,echo=TRUE}
 
 prml.from.tri <- function(trials, spiketimes, frq = c(1100, 742),
-                       pos = c(24, -6), on.reward = TRUE, start.time = 0, end.time = 600,
-                       match.level = FALSE, AB.eqlevel = FALSE, go.by.soff = FALSE, ...){
+                       pos = c(24, -6), on.reward = TRUE, start.time = 0, 
+                       end.time = 600, match.level = FALSE, AB.eqlevel = FALSE,
+                       go.by.soff = FALSE, remove.zeros=FALSE, ...){
 
   attach(trials)
   attach(spiketimes)
@@ -122,7 +123,11 @@ prml.from.tri <- function(trials, spiketimes, frq = c(1100, 742),
   s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
   dp <- paste("Duplex: ", lev, "Db ", sep = "")
   
-  res=prml_tests(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0)
+  res=prml_tests(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0,remove.zeros=remove.zeros)
+  # By default:
+  #remove.zeros = FALSE
+  #mu_l="min",mu_u="max",gamma.pars = c(0.5, 2e-10), 
+  #n_gq = 20, n_per = 100, alpha = 0.5
 
   return(res)
 }
@@ -156,13 +161,13 @@ prml.from.fname <- function(fname, data.path = "Data", on.reward = TRUE,
 
   for(fr in alt.freq){
     for(po in alt.pos){
-      try({lbf <-prml.from.tri(trials, spiketimes, c(fr, 742), c(po, -144/po), on.reward, start, end, match.level, AB.eqlevel, go.by.soff=FALSE, remove.zeros)%>%unlist(.);
+      try({lbf <-prml.from.tri(trials, spiketimes, c(fr, 742), c(po, -144/po), on.reward, start, end, match.level, AB.eqlevel, go.by.soff=FALSE, remove.zeros=remove.zeros)%>%unlist(.);
       cat(fname, c(fr, po, lbf), "\n", file = outfile, append = TRUE);
       })
     }
   }
 }
-
+  
 ```
 
 The for loop is for:
@@ -190,8 +195,10 @@ for (file.name in fnames){
 
 ```{r,eval=FALSE,echo=TRUE}
 prml.from.tri.f <- function(trials, spiketimes, frq = c(1100, 742),
-                       pos = c(24, -6), on.reward = TRUE, start.time = 0, end.time = 600,
-                       match.level = FALSE, AB.eqlevel = FALSE, go.by.soff = FALSE, ...){
+                       pos = c(24, -6), on.reward = TRUE, 
+                       start.time = 0, end.time = 600,
+                       match.level = FALSE, AB.eqlevel = FALSE, go.by.soff = FALSE,
+                       remove.zeros=FALSE, ...){
 
   attach(trials)
   attach(spiketimes)
@@ -249,9 +256,16 @@ prml.from.tri.f <- function(trials, spiketimes, frq = c(1100, 742),
   s1 <- paste(frq[1],"Hz ",pos[1],"deg ",lev,"Db ", sep = "")
   s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
   dp <- paste("Duplex: ", lev, "Db ", sep = "")
-  res=prml_tests_f(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0)
+  res=prml_tests_f(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0,
+                   remove.zeros=remove.zeros)
+  # By default:
+  #remove.zeros = FALSE
+  #mu_l="min",mu_u="max",gamma.pars = c(0.5, 2e-10), 
+  #n_gq = 20, n_mu = 100, n_per = 100, alpha = 0.5
+  
   return(res)
 }
+
 
 ```
 
@@ -277,7 +291,7 @@ prml.from.fname.f <- function(fname, data.path = "Data", on.reward = TRUE,
     for(po in alt.pos){
       try({lbf <-prml.from.tri.f(trials, spiketimes, c(fr, 742), c(po, -144/po),
                             on.reward, start, end, match.level, AB.eqlevel,
-                            remove.zeros);
+                            go.by.soff=FALSE, remove.zeros=remove.zeros);
       cat(fname, c(fr, po, unlist(lbf$out1)), "\n", file = outfile, append = TRUE);
       cat("mix", fname, c(fr, po, lbf$out2$mix_pf), "\n", file = paste0("mix_",outfile), append = TRUE);
       cat("int", fname, c(fr, po, lbf$out2$int_pf), "\n", file = paste0("int_out_",outfile), append = TRUE);
@@ -287,7 +301,6 @@ prml.from.fname.f <- function(fname, data.path = "Data", on.reward = TRUE,
     }
   }
 }
-
 ```
 
 ```{r,eval=FALSE,echo=TRUE}
