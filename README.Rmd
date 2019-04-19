@@ -34,6 +34,8 @@ If you want to obtain density estimation of the mixing density, replace `prml_te
 
 ## Installation
 
+Not yet available in cran. Install the development version for now.
+
 ```{r,echo=TRUE, eval=FALSE}
 install.packages("prml")
 ```
