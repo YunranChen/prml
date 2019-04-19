@@ -164,7 +164,6 @@ prml.from.fname <- function(fname, data.path = "Data", on.reward = TRUE,
   alt.freq <- sort(FREQS[FREQS > 0 & FREQS != 742])
   alt.pos <- c(-24, -6, 6, 24)
 
-  par(mfcol = c(length(alt.freq),2), mar = c(2,3,3,0) + .1)
 
   for(fr in alt.freq){
     for(po in alt.pos){
@@ -299,7 +298,6 @@ prml.from.fname.f <- function(fname, data.path = "Data", on.reward = TRUE,
   alt.freq <- sort(FREQS[FREQS > 0 & FREQS != 742])
   alt.pos <- c(-24, -6, 6, 24)
 
-  par(mfcol = c(length(alt.freq),2), mar = c(2,3,3,0) + .1)
 
   for(fr in alt.freq){
     for(po in alt.pos){
