@@ -78,7 +78,7 @@ prml_int <- function(xs_bn, n_gq = 20, n_per = 100, alpha = 0.5) {
     })  #each col is a permutation
     lq <- quantile(xs_bn, 0.25)
     uq <- quantile(xs_bn, 0.75)
-    a <- lq - alpha * (uq - lq)
+    a <- max(0,lq - alpha * (uq - lq))
     b <- uq + alpha * (uq - lq)
     names(a) <- names(b) <- NULL
     xs_gq <- out$nodes * (b - a) / 2 + (a + b) / 2  #change interval
@@ -102,7 +102,7 @@ cml <- function(xs_bn, alpha = 0.5) {
     alpha <- 0.5
     lq <- quantile(yi, 0.25)
     uq <- quantile(yi, 0.75)
-    a <- lq - alpha * (uq - lq)
+    a <- max(0,lq - alpha * (uq - lq))
     b <- uq + alpha * (uq - lq)
     names(a) <- names(b) <- NULL
     res <- -log(b - a) - sum(lgamma(yi + 1)) +
