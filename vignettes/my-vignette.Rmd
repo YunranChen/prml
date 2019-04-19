@@ -118,7 +118,14 @@ prml.from.tri <- function(trials, spiketimes, frq = c(1100, 742),
   detach(trials)
   detach(spiketimes)
 
-
+  if ((mean(Acounts)==0)|(mean(Bcounts==0))|(mean(ABcounts==0))){
+    stop("All the spike counts are 0 under a specific condition.")
+  }
+  
+  if ((length(Acounts)==1)|(length(Bcounts)==1)|(length(ABcounts)==1)){
+    stop("Only 1 available trial under a specific condition.")
+  }
+  
   s1 <- paste(frq[1],"Hz ",pos[1],"deg ",lev,"Db ", sep = "")
   s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
   dp <- paste("Duplex: ", lev, "Db ", sep = "")
@@ -252,7 +259,14 @@ prml.from.tri.f <- function(trials, spiketimes, frq = c(1100, 742),
   detach(trials)
   detach(spiketimes)
 
-
+  if ((mean(Acounts)==0)|(mean(Bcounts==0))|(mean(ABcounts==0))){
+    stop("All the spike counts are 0 under a specific condition.")
+  }
+  
+  if ((length(Acounts)==1)|(length(Bcounts)==1)|(length(ABcounts)==1)){
+    stop("Only 1 available trial under a specific condition.")
+  }
+  
   s1 <- paste(frq[1],"Hz ",pos[1],"deg ",lev,"Db ", sep = "")
   s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
   dp <- paste("Duplex: ", lev, "Db ", sep = "")
@@ -444,3 +458,5 @@ dev.off()
 ```{r, echo=FALSE}
 knitr::include_graphics("images/plot_pdf.png")
 ```
+
+
