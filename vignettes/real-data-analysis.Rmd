@@ -31,6 +31,8 @@ For real data anlaysis, we only need to use function `prml_tests()`, which take 
 
 If you want to obtain density estimation of the mixing density, replace `prml_tests()` with `prml_tests_f()` in the sample code. 
 
+For parallel version for the whole analysis, see [Parallel Version](https://yunranchen.github.io/prml/articles/parallel.html)
+
 ## Dataset
 
 The raw data is stored as .txt file pairs. One stores the experiment condition and corresponding condition id. The other stores the timepoints of spikes under experiment specified by the id. The raw data included within a pair of .txt files contains multiple experiment triplets. And there are multiple pairs within the folder `Data/JA/`.
@@ -45,7 +47,7 @@ The following data shows:
 
 ```{r,eval=FALSE,echo=TRUE}
 # devtools::install_github("yunranchen/prml")
-library(prml)
+library("prml")
 library("statmod")
 library("dplyr")
 library("purrr")

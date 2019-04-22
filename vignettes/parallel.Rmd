@@ -382,7 +382,7 @@ ls
 
 ## Singularity file
 
-I built a docker image providing the environment to run the `prml_analysis.R` script. The details of the singularity file please refer to the article `Singularity Environment Building`.
+I built a docker image providing the environment to run the `prml_analysis.R` script. The details of the singularity file please refer to the article [Singularity Environment Building](https://yunranchen.github.io/prml/articles/singularity.html).
 
 Here you just need to download it from the dockerhub. 
 
