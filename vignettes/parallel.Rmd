@@ -303,8 +303,8 @@ I built a docker image providing the environment to run the `prml_analysis.R` sc
 Here you just need to download it from the dockerhub. Copy the following line and run it in compute cluster.
 
 ```{bash,eval=FALSE,echo=TRUE}
-$docker pull yunran/prml:latest
-$singularity pull docker://yunran/prml:latest
+docker pull yunran/prml:latest
+sudo singularity pull docker://yunran/prml
 ```
 
 
