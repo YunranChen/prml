@@ -1,5 +1,5 @@
 ---
-title: "Real Data Analysis"
+title: "Singularity Environment Building"
 author: "Yunran Chen"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -7,9 +7,7 @@ vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-resource_files:
-  - images/plot.png
-  - images/plot_pdf.png
+
 ---
 
 ```{r setup, include = FALSE}
@@ -19,180 +17,31 @@ knitr::opts_chunk$set(
 )
 ```
 
-**prml** is designed to implement the PRML classifier and PRML filter proposed by Chen and Tokdar (2019).
 
-PRML classifier is a hypothesis testing for different types of Poisson mixtures. PRML filter is a hypothesis testing for screening out data with overdispersed Poisson. PRML classifier take second order stochasticity into consideration, helping neuroscientists to classify the activation patterns that a single neuron exhibits when preserving information from multiple stimuli. PRML filter contributes to avoid mistaking trial-to-trial variation as second order stochasticity.
+I first built a docker based on <docker://openblasr/base>
 
-For real data anlaysis, we only need to use function `prml_tests()`, which take the $\{Y^A,Y^B,Y^{AB}\}$ as input. $\{Y^A,Y^B,Y^{AB}\}$ represent spike count data coming from the repeated trials under condition $\{A,B,AB\}$ (single-stimulus trial A, B and dual-stimuli trial AB). We provide a sample code on
-
-- how to extract the spike count triplets from the raw data;
-- how to use function `prml_tests()`; 
-- simple data visualization on the result. 
-
-If you want to obtain density estimation of the mixing density, replace `prml_tests()` with `prml_tests_f()` in the sample code. 
-
-## Dataset
-
-The raw data is stored as .txt file pairs. One stores the experiment condition and corresponding condition id. The other stores the timepoints of spikes under experiment specified by the id. The raw data included within a pair of .txt files contains multiple experiment triplets. And there are multiple pairs within the folder.
-
-The following data shows:
-
-- `prml.from.tri()`: extract spike count triplets from a pair of .txt raw data under specified condition; and apply `prml_tests()` for each spike count triplet.
-- `prml.from.fname()`: apply `prml.from.tri()` under all possible conditions within a pair of .txt raw data.
-- apply `prml.from.fname()` for all pairs of .txt raw data within a folder. save the output as a .txt file.
-
-## Preparation
-
-```{r,eval=FALSE,echo=TRUE}
-# devtools::install_github("yunranchen/prml")
-library(prml)
-library("statmod")
-library("dplyr")
-library("purrr")
+```{bash,eval=FALSE,echo=TRUE}
+ssh yc304@yunranchen.colab.duke.edu
+docker pull openblasr/base
+docker run -it --name yunran/prml openblasr/base  /bin/bas
+R
+install.packages("dplyr")
+install.packages("statmod")
+install.packages("devtools")
+devtools::install_github("yunranchen/prml",force=TRUE)
+4
+docker run -it --rm openblasr/base  /bin/bash
+docker push yunran/prml:latest
+ docker pull yunran/prml
+ docker build - < Dockerfile -t yunran/prml:latest
 ```
 
-## Example for applying `prml_tests()`
 
-The function `prml.from.tri()` is for:
-
-- Under specified triplets condition $\{A,B,AB\}$, extract spike count triplets from two dataframes `trials` (storing information of triplets condition) and `spiketimes` (storing the timepoints of spikes within trials). 
-- Apply `prml_test()` on the spike count triplets.
+## Run in Compute Cluster
 
 
-```{r,eval=FALSE,echo=TRUE}
-
-prml.from.tri <- function(trials, spiketimes, frq = c(1100, 742),
-                       pos = c(24, -6), on.reward = TRUE, start.time = 0, 
-                       end.time = 600, match.level = FALSE, AB.eqlevel = FALSE,
-                       go.by.soff = FALSE, remove.zeros=FALSE, ...){
-
-  attach(trials)
-  attach(spiketimes)
-
-  timestamps <- split(TIMES, TRIAL2)
-  ntrials <- length(timestamps)
-  trial.id <- as.numeric(names(timestamps)) 
-
-  ix1 <- TASKID == 8 & A_FREQ == frq[1] & XA == pos[1]
-  ix2 <- TASKID == 8 & A_FREQ == frq[2] & XA == pos[2]
-  ix3 <- TASKID == 12 & (A_FREQ == frq[1] & B_FREQ == frq[2] & XA == pos[1] & XB == pos[2]) | (A_FREQ == frq[2] & B_FREQ == frq[1] & XA == pos[2] & XB == pos[1])
-
-  if(on.reward){
-    ix1 <- ix1 & REWARD == 1
-    ix2 <- ix2 & REWARD == 1
-    ix3 <- ix3 & REWARD == 1
-  }
-
-  blev <- sort(unique(B_LEVEL[ix3]))
-  targ.lev <- blev[blev > 0]
-  lev <- "*"
-  if(match.level) {
-    if(length(targ.lev) > 1) {
-      targ.lev <- max(targ.lev)
-      warning("Multiple single sound levels, choosing largest one")
-    }
-    ix1 <- ix1 & A_LEVEL == targ.lev
-    ix2 <- ix2 & A_LEVEL == targ.lev
-    lev <- as.character(targ.lev)
-  }
-
-  if(AB.eqlevel) ix3 <- ix3 & (A_LEVEL == B_LEVEL)
-
-  sing1 <- trials[ix1, 1]
-  sing2 <- trials[ix2, 1]
-  duplx <- trials[ix3, 1]
-  success <- REWARD[ix3]
-
-  if(go.by.soff) end.time <- min(SOFF[ix1 | ix2 | ix3])
-
-  spike.counter <- function(jj){
-    jj1 <- match(jj, trial.id)
-    spks <- timestamps[[jj1]]
-    return(sum(spks > start.time & spks < end.time))
-  }
-
-  Acounts <- sapply(sing1, spike.counter)
-  Bcounts <- sapply(sing2, spike.counter)
-  ABcounts <- sapply(duplx, spike.counter)
-
-  detach(trials)
-  detach(spiketimes)
-
-  if ((mean(Acounts)==0)|(mean(Bcounts==0))|(mean(ABcounts==0))){
-    stop("All the spike counts are 0 under a specific condition.")
-  }
-  
-  if ((length(Acounts)==1)|(length(Bcounts)==1)|(length(ABcounts)==1)){
-    stop("Only 1 available trial under a specific condition.")
-  }
-  
-  s1 <- paste(frq[1],"Hz ",pos[1],"deg ",lev,"Db ", sep = "")
-  s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
-  dp <- paste("Duplex: ", lev, "Db ", sep = "")
-  
-  res=prml_tests(xA=Acounts, xB=Bcounts, xAB=ABcounts, labels = c(s1, s2, dp),e=0,remove.zeros=remove.zeros)
-  # By default:
-  #remove.zeros = FALSE
-  #mu_l="min",mu_u="max",gamma.pars = c(0.5, 2e-10), 
-  #n_gq = 20, n_per = 100, alpha = 0.5
-
-  return(res)
-}
-
-```
-
-The function  `prml.from.fname()` is for:
-
-- Find all possible conditions within a pair of .txt files
-- apply `prml.from.tri()` under all possible triplets
 
 
-```{r,eval=FALSE,echo=TRUE}
-prml.from.fname <- function(fname, data.path = "Data", on.reward = TRUE,
-                   match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
-                   start = 0, end = 600, remove.zeros = FALSE){
-
-  infile1 <- paste(data.path, "/JA/", fname, ".txt", sep = "")
-  
-  trials <- read.table(infile1, col.names = c("TRIAL", "TASKID", "A_FREQ", "B_FREQ", "XA", "XB", "REWARD", "A_LEVEL", "B_LEVEL"))
-
-  infile2 <- paste(data.path, "/JA/", fname, "_spiketimes.txt", sep = "")
-  
-  spiketimes <- read.table(infile2, col.names = c("TRIAL2", "TIMES"))
-
-  FREQS <- unique(c(trials$A_FREQ, trials$B_FREQ))
-  alt.freq <- sort(FREQS[FREQS > 0 & FREQS != 742])
-  alt.pos <- c(-24, -6, 6, 24)
-
-
-  for(fr in alt.freq){
-    for(po in alt.pos){
-      try({lbf <-prml.from.tri(trials, spiketimes, c(fr, 742), c(po, -144/po), on.reward, start, end, match.level, AB.eqlevel, go.by.soff=FALSE, remove.zeros=remove.zeros)%>%unlist(.);
-      cat(fname, c(fr, po, lbf), "\n", file = outfile, append = TRUE);
-      })
-    }
-  }
-}
-  
-```
-
-The for loop is for:
-
-- apply `prml.from.fname()` for all pairs of .txt files within the folder.
-
-```{r,eval=FALSE,echo=TRUE}
-set.seed(123)
-#fnames -- a list of names of the .txt files in the folder
-fnames=scan("JA230_list_randomly_interleaved.txt", "a")
-for (file.name in fnames){
-  #"Data" is the folder you store all the .txt files
-  #"result.txt" is the folder you store the result
-  try(prml.from.fname(file.name, data.path = "Data", on.reward = TRUE,
-              match.level = FALSE, AB.eqlevel = FALSE, outfile = "result.txt",
-              start = 0, end = 600, remove.zeros = FALSE))
-}
-
-```
 
 ## Example for applying `prml_tests_f()`
 
