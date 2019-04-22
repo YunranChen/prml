@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">prml</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.3</span>
       </span>
     </div>
 
@@ -101,7 +101,24 @@
 <li>Download the singularity file providing the environment for the R script.</li>
 <li>Prepare a batch script (.sh) to submit the job (running R script on singularity) to the compute cluster.</li>
 </ul>
-<p>I present example for applying <code><a href="../reference/prml_tests.html">prml_tests()</a></code> first. If you want to apply <code>prml_test_</code></p>
+<div id="steps" class="section level2">
+<h2 class="hasAnchor">
+<a href="#steps" class="anchor"></a>Steps</h2>
+<p>Follow the steps:</p>
+<ol style="list-style-type: decimal">
+<li><p>Create a folder named <code>Analysis</code>. Within the folder, include your raw data in the sub folder <code>./Data/JA</code>. Assume the raw data is paired .txt files, named <code>UNIQUEIDDoubleSound.txt</code> and <code>UNIQUEIDDoubleSound_spiketimes.txt</code>, storing the condition of the experiment and the spike times records respectively.</p></li>
+<li><p>Run the R code in <code>Preparation</code> section, to create a <code>filenames.txt</code> file stored in folder <code>Analysis</code>, including all the paired file names. Run the R code in <code>Preparation</code> section, to separate the raw data into <code>n_part</code> parts (I set 3 parts here.) Create several <code>filenames_NUMBER.txt</code> files stored in folder <code>Analysis</code>, including part of the paired file names respectively.</p></li>
+<li><p>Create a R file named <code>prml_analysis.R</code> within folder <code>Analysis</code> following the section <code>R Script (Parallel Version)</code>.</p></li>
+<li><p>Create a Batch script named <code>prml_analysis.sh</code> within folder <code>Analysis</code> following the section <code>Batch Script</code>.</p></li>
+<li><p>Create a folder <code>others</code> within folder <code>Analysis</code> to store the output and error messages from the R script and Batch script.</p></li>
+<li><p>Upload the folder <code>Analysis</code> to the compute cluster following the section <code>Upload Files</code>.</p></li>
+<li><p>Download the Singularity file to the folder <code>Analysis</code> as shown in section <code>Singularity file</code>. Notice, once it is download, next time you want to use it, you only need to copy it to your another analysis folder.</p></li>
+<li><p>Run in the compute cluster by following section <code>Run in Compute Cluster</code>. And you can also check the status of your jobs.</p></li>
+<li><p>After all the jobs finish, fetch the results to your local folder and visualize your result. Section <code>Fetch Results and Visualizations</code> shows how to gather the results and do basic data cleaning before visualization.</p></li>
+<li><p>Some notes. See section <code>Notes</code>.</p></li>
+<li><p>If you want to apply <code><a href="../reference/prml_tests_f.html">prml_tests_f()</a></code> instead of <code><a href="../reference/prml_tests.html">prml_tests()</a></code>, just need to change the R script to the one shown in section <code>Another R Script Example</code>.</p></li>
+</ol>
+</div>
 <div id="preparation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#preparation" class="anchor"></a>Preparation</h2>
@@ -129,11 +146,18 @@
 <a class="sourceLine" id="cb1-17" data-line-number="17">flist &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/split">split</a></span>(fnames, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/seq">seq_along</a></span>(fnames)<span class="op">%%</span>n_part<span class="op">+</span><span class="dv">1</span>)</a>
 <a class="sourceLine" id="cb1-18" data-line-number="18"><span class="kw"><a href="https://purrr.tidyverse.org/reference/map.html">map</a></span>(<span class="dv">1</span><span class="op">:</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(flist),<span class="op">~</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/write">write</a></span>(flist[[.x]],<span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"filenames_"</span>,.x,<span class="st">".txt"</span>)))</a></code></pre></div>
 </div>
-<div id="r-scriptparallel-version" class="section level2">
+<div id="r-script-parallel-version" class="section level2">
 <h2 class="hasAnchor">
-<a href="#r-scriptparallel-version" class="anchor"></a>R Script(Parallel Version)</h2>
+<a href="#r-script-parallel-version" class="anchor"></a>R Script (Parallel Version)</h2>
 <p>Write a R script (named <code>prml_analysis.R</code>).</p>
-<p>In <code>Real Data Analysis</code> article, I parallel the nested for loop in the <code>prml.from.fname</code> through all the possible triplets with multithreading. And I also consider splitting the <code>filenames.txt</code> to <code>filenames_.txt</code> and consider parallelization in compute cluster.</p>
+<p>In <code>Real Data Analysis</code> article, I parallel the nested for loop in the <code>prml.from.fname</code> through all the possible triplets with <code>n_parallel</code> multithreading. And I also consider splitting the <code>filenames.txt</code> to <code>file_number</code> parts, named <code>filenames_.txt</code> respectively and consider parallelization in compute cluster.</p>
+<p>Arguments for the <code>prml_analysis.R</code> script:</p>
+<ul>
+<li>
+<code>n_parallel</code>: number of threads within R level parallelization</li>
+<li>
+<code>file_number</code>: the indicator for the specific subfile. This is within compute cluster level parallelization (using sbtach array)</li>
+</ul>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"></a>
 <a class="sourceLine" id="cb2-2" data-line-number="2">{</a>
 <a class="sourceLine" id="cb2-3" data-line-number="3">  args =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/commandArgs">commandArgs</a></span>(<span class="dt">trailingOnly =</span> <span class="ot">TRUE</span>)</a>
@@ -265,7 +289,7 @@
 <a class="sourceLine" id="cb2-129" data-line-number="129">             <span class="dt">start =</span> <span class="dv">0</span>,</a>
 <a class="sourceLine" id="cb2-130" data-line-number="130">             <span class="dt">end =</span> <span class="dv">600</span>,</a>
 <a class="sourceLine" id="cb2-131" data-line-number="131">             <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb2-132" data-line-number="132">             <span class="dt">mccore =</span> <span class="dv">4</span>) {</a>
+<a class="sourceLine" id="cb2-132" data-line-number="132">             <span class="dt">mccores =</span> <span class="dv">4</span>) {</a>
 <a class="sourceLine" id="cb2-133" data-line-number="133">      infile1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(data.path, <span class="st">"/JA/"</span>, fname, <span class="st">".txt"</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
 <a class="sourceLine" id="cb2-134" data-line-number="134">      </a>
 <a class="sourceLine" id="cb2-135" data-line-number="135">      trials &lt;-</a>
@@ -322,293 +346,650 @@
 <a class="sourceLine" id="cb2-186" data-line-number="186">      })</a>
 <a class="sourceLine" id="cb2-187" data-line-number="187">    }</a>
 <a class="sourceLine" id="cb2-188" data-line-number="188">  </a>
-<a class="sourceLine" id="cb2-189" data-line-number="189">  </a>
-<a class="sourceLine" id="cb2-190" data-line-number="190">  <span class="co"># for loop across all the file.</span></a>
+<a class="sourceLine" id="cb2-189" data-line-number="189">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Random">set.seed</a></span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb2-190" data-line-number="190">  fnames &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/scan">scan</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"filenames_"</span>, file_number, <span class="st">".txt"</span>), <span class="st">"a"</span>) </a>
 <a class="sourceLine" id="cb2-191" data-line-number="191">  </a>
-<a class="sourceLine" id="cb2-192" data-line-number="192">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Random">set.seed</a></span>(<span class="dv">123</span>)</a>
-<a class="sourceLine" id="cb2-193" data-line-number="193">  fnames &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/scan">scan</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"filenames_"</span>, file_number, <span class="st">".txt"</span>), <span class="st">"a"</span>)</a>
-<a class="sourceLine" id="cb2-194" data-line-number="194">  <span class="cf">for</span> (file.name <span class="cf">in</span> fnames) {</a>
-<a class="sourceLine" id="cb2-195" data-line-number="195">    <span class="co">#"Data" is the folder you store all the .txt files</span></a>
-<a class="sourceLine" id="cb2-196" data-line-number="196">    <span class="co">#"result.txt" is the folder you store the result</span></a>
-<a class="sourceLine" id="cb2-197" data-line-number="197">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>(<span class="kw">prml.from.fname</span>(</a>
-<a class="sourceLine" id="cb2-198" data-line-number="198">      file.name,</a>
-<a class="sourceLine" id="cb2-199" data-line-number="199">      <span class="dt">data.path =</span> <span class="st">"Data"</span>,</a>
-<a class="sourceLine" id="cb2-200" data-line-number="200">      <span class="dt">on.reward =</span> <span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb2-201" data-line-number="201">      <span class="dt">match.level =</span> <span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb2-202" data-line-number="202">      <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb2-203" data-line-number="203">      <span class="dt">outfile =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"result_"</span>, file_number, <span class="st">".txt"</span>),</a>
-<a class="sourceLine" id="cb2-204" data-line-number="204">      <span class="dt">start =</span> <span class="dv">0</span>,</a>
-<a class="sourceLine" id="cb2-205" data-line-number="205">      <span class="dt">end =</span> <span class="dv">600</span>,</a>
-<a class="sourceLine" id="cb2-206" data-line-number="206">      <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb2-207" data-line-number="207">      <span class="dt">mccores =</span> n_parallel</a>
-<a class="sourceLine" id="cb2-208" data-line-number="208">    ))</a>
-<a class="sourceLine" id="cb2-209" data-line-number="209">  }</a>
-<a class="sourceLine" id="cb2-210" data-line-number="210">}</a></code></pre></div>
+<a class="sourceLine" id="cb2-192" data-line-number="192">  <span class="co"># for loop across all the file.</span></a>
+<a class="sourceLine" id="cb2-193" data-line-number="193">  start =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Sys.time">Sys.time</a></span>()</a>
+<a class="sourceLine" id="cb2-194" data-line-number="194"></a>
+<a class="sourceLine" id="cb2-195" data-line-number="195">  <span class="cf">for</span> (file.name <span class="cf">in</span> fnames) {</a>
+<a class="sourceLine" id="cb2-196" data-line-number="196">    <span class="co">#"Data" is the folder you store all the .txt files</span></a>
+<a class="sourceLine" id="cb2-197" data-line-number="197">    <span class="co">#"result.txt" is the folder you store the result</span></a>
+<a class="sourceLine" id="cb2-198" data-line-number="198">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>(<span class="kw">prml.from.fname</span>(</a>
+<a class="sourceLine" id="cb2-199" data-line-number="199">      file.name,</a>
+<a class="sourceLine" id="cb2-200" data-line-number="200">      <span class="dt">data.path =</span> <span class="st">"Data"</span>,</a>
+<a class="sourceLine" id="cb2-201" data-line-number="201">      <span class="dt">on.reward =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb2-202" data-line-number="202">      <span class="dt">match.level =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb2-203" data-line-number="203">      <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb2-204" data-line-number="204">      <span class="dt">outfile =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"result_"</span>, file_number, <span class="st">".txt"</span>),</a>
+<a class="sourceLine" id="cb2-205" data-line-number="205">      <span class="dt">start =</span> <span class="dv">0</span>,</a>
+<a class="sourceLine" id="cb2-206" data-line-number="206">      <span class="dt">end =</span> <span class="dv">600</span>,</a>
+<a class="sourceLine" id="cb2-207" data-line-number="207">      <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb2-208" data-line-number="208">      <span class="dt">mccores =</span> n_parallel</a>
+<a class="sourceLine" id="cb2-209" data-line-number="209">    ))</a>
+<a class="sourceLine" id="cb2-210" data-line-number="210">  }</a>
+<a class="sourceLine" id="cb2-211" data-line-number="211">  end =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Sys.time">Sys.time</a></span>()</a>
+<a class="sourceLine" id="cb2-212" data-line-number="212">  </a>
+<a class="sourceLine" id="cb2-213" data-line-number="213">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"Run time: "</span>, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/difftime">difftime</a></span>(end, start, <span class="dt">units=</span><span class="st">"secs"</span>), <span class="st">"s</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">sep=</span><span class="st">""</span>)</a>
+<a class="sourceLine" id="cb2-214" data-line-number="214">}</a></code></pre></div>
 </div>
 <div id="batch-script" class="section level2">
 <h2 class="hasAnchor">
 <a href="#batch-script" class="anchor"></a>Batch Script</h2>
 <p>Create a .sh file (named <code>prml_analysis.sh</code>).</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="co">#!/bin/bash</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="co">#SBATCH —-partition=common</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="co">#SBATCH —-output=results/site_%a.out</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="co">#SBATCH —-error=results/site_%a.err</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="co">#SBATCH -c8</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="co">#SBATCH —-array=1-3</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="ex">singularity</span> run -B /work:/work ex_pm25.simg analysis.R <span class="va">$SLURM_ARRAY_TASK_ID</span></a></code></pre></div>
+<p>If you use bash command to create the file, use <code>vim</code> to create a file and edit it, then use <code>esc</code> to escape editing, press <code>shift+zz</code> to exit the file.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="bu">cd</span> PATH_TO_ANALYSIS</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="ex">vim</span> prml_analysis.sh</a></code></pre></div>
+<p>If you use Rstudio to create the file:</p>
+<p>File -&gt; New File -&gt; Text File -&gt; Save -&gt; Change the name to <code>prml_analysis.sh</code>.</p>
+<p>Copy the following to the .sh file. Note:</p>
+<ul>
+<li>
+<code>-c8</code> should match with the <code>n_parallel</code> argument of the R script, which is the first number after .R</li>
+<li>
+<code>array=1-3</code> should match with <code>n_part</code> in the <code>Preparation</code> section. It should be the number of subfiles you have.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co">#!/bin/bash</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="co">#SBATCH --partition=common</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="co">#SBATCH --output=others/filenames_%a.out</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="co">#SBATCH --error=others/filenames_%a.err</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="co">#SBATCH -c8</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="co">#SBATCH --array=1-3</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="ex">singularity</span> run -B <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/work prml.simg prml_analysis.R 8 <span class="va">$SLURM_ARRAY_TASK_ID</span></a></code></pre></div>
 </div>
 <div id="upload-files" class="section level2">
 <h2 class="hasAnchor">
 <a href="#upload-files" class="anchor"></a>Upload Files</h2>
+<ol style="list-style-type: decimal">
+<li>Open a new teminal 1.</li>
+</ol>
+<ul>
+<li>Login to the compute cluster.</li>
+<li>Create a folder named <code>Analysis</code>
+</li>
+</ul>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="fu">ssh</span> ACCOUNT@dcc-slogin.oit.duke.edu:.</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="fu">mkdir</span> Analysis</a></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li>Open a terminal 2.</li>
+</ol>
+<ul>
+<li>Copy the path to the folder <code>Analysis</code>.</li>
+<li>Go to the folder <code>Analysis</code>.</li>
+<li>Copy all the files within the local folder <code>Analysis</code> to the folder <code>Analysis</code> in compute cluster.</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="bu">cd</span> PATH_TO_ANALYSIS</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="fu">rsync</span> -av * ACCOUNT@dcc-slogin.oit.duke.edu:./Analysis</a></code></pre></div>
+<ol start="3" style="list-style-type: decimal">
+<li>Check your files.</li>
+</ol>
+<p>In terminal 1, go to the folder <code>Analysis</code> to see the list of files.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="bu">cd</span> Analysis/</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="fu">ls</span></a></code></pre></div>
 </div>
 <div id="singularity-file" class="section level2">
 <h2 class="hasAnchor">
 <a href="#singularity-file" class="anchor"></a>Singularity file</h2>
 <p>I built a docker image providing the environment to run the <code>prml_analysis.R</code> script. The details of the singularity file please refer to the article <code>Singularity Environment Building</code>.</p>
-<p>Here you just need to download it from the dockerhub. Copy the following line and run it in compute cluster.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="va">$docker</span> <span class="ex">pull</span> yunran/prml:latest</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="va">$singularity</span> <span class="ex">pull</span> docker://yunran/prml:latest</a></code></pre></div>
+<p>Here you just need to download it from the dockerhub.</p>
+<ul>
+<li>Login to the compute cluster.</li>
+<li>Go to the folder named <code>Analysis</code>.</li>
+<li>Download the singularity. Copy the following line and run it in compute cluster.</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ex">singularity</span> pull docker://yunran/prml</a></code></pre></div>
 </div>
 <div id="run-in-compute-cluster" class="section level2">
 <h2 class="hasAnchor">
 <a href="#run-in-compute-cluster" class="anchor"></a>Run in Compute Cluster</h2>
-</div>
-<div id="example-for-applying-prml_tests_f" class="section level2">
-<h2 class="hasAnchor">
-<a href="#example-for-applying-prml_tests_f" class="anchor"></a>Example for applying <code><a href="../reference/prml_tests_f.html">prml_tests_f()</a></code>
-</h2>
+<p>Preparation: Make sure within your <code>Analysis</code> file, including <code>prml_analysis.R</code>, <code>prml_analysis.sh</code>, <code>prml.simg</code>, <code>filenames_.txt</code> files and folder <code>others</code> and <code>Data</code>.</p>
 <ul>
-<li>
-<code>prml.from.tri.f()</code>: replace <code><a href="../reference/prml_tests.html">prml_tests()</a></code> in <code>prml.from.tri()</code> with <code><a href="../reference/prml_tests_f.html">prml_tests_f()</a></code>
-</li>
-<li>
-<code>prml.from.fname.f()</code>: apply <code>prml.from.tri.f()</code> and output the density estimation in a separate .txt file.</li>
+<li>Sbatch your .sh script</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">prml.from.tri.f &lt;-<span class="st"> </span><span class="cf">function</span>(trials, spiketimes, <span class="dt">frq =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">1100</span>, <span class="dv">742</span>),</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">                       <span class="dt">pos =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">24</span>, <span class="dv">-6</span>), <span class="dt">on.reward =</span> <span class="ot">TRUE</span>, </a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">                       <span class="dt">start.time =</span> <span class="dv">0</span>, <span class="dt">end.time =</span> <span class="dv">600</span>,</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">                       <span class="dt">match.level =</span> <span class="ot">FALSE</span>, <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>, <span class="dt">go.by.soff =</span> <span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">                       <span class="dt">remove.zeros=</span><span class="ot">FALSE</span>, ...){</a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/attach">attach</a></span>(trials)</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/attach">attach</a></span>(spiketimes)</a>
-<a class="sourceLine" id="cb5-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">  timestamps &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/split">split</a></span>(TIMES, TRIAL2)</a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">  ntrials &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(timestamps)</a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">  trial.id &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/names">names</a></span>(timestamps)) <span class="co">## same as unique(TRIAL2)</span></a>
-<a class="sourceLine" id="cb5-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb5-14" data-line-number="14">  ix1 &lt;-<span class="st"> </span>TASKID <span class="op">==</span><span class="st"> </span><span class="dv">8</span> <span class="op">&amp;</span><span class="st"> </span>A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">1</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb5-15" data-line-number="15">  ix2 &lt;-<span class="st"> </span>TASKID <span class="op">==</span><span class="st"> </span><span class="dv">8</span> <span class="op">&amp;</span><span class="st"> </span>A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">2</span>]</a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">  ix3 &lt;-<span class="st"> </span>TASKID <span class="op">==</span><span class="st"> </span><span class="dv">12</span> <span class="op">&amp;</span><span class="st"> </span>(A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">1</span>] <span class="op">&amp;</span><span class="st"> </span>B_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">1</span>] <span class="op">&amp;</span><span class="st"> </span>XB <span class="op">==</span><span class="st"> </span>pos[<span class="dv">2</span>]) <span class="op">|</span><span class="st"> </span>(A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>B_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">1</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>XB <span class="op">==</span><span class="st"> </span>pos[<span class="dv">1</span>])</a>
-<a class="sourceLine" id="cb5-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb5-18" data-line-number="18">  <span class="cf">if</span>(on.reward){</a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">    ix1 &lt;-<span class="st"> </span>ix1 <span class="op">&amp;</span><span class="st"> </span>REWARD <span class="op">==</span><span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">    ix2 &lt;-<span class="st"> </span>ix2 <span class="op">&amp;</span><span class="st"> </span>REWARD <span class="op">==</span><span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-21" data-line-number="21">    ix3 &lt;-<span class="st"> </span>ix3 <span class="op">&amp;</span><span class="st"> </span>REWARD <span class="op">==</span><span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-22" data-line-number="22">  }</a>
-<a class="sourceLine" id="cb5-23" data-line-number="23"></a>
-<a class="sourceLine" id="cb5-24" data-line-number="24">  blev &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sort">sort</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unique">unique</a></span>(B_LEVEL[ix3]))</a>
-<a class="sourceLine" id="cb5-25" data-line-number="25">  targ.lev &lt;-<span class="st"> </span>blev[blev <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>]</a>
-<a class="sourceLine" id="cb5-26" data-line-number="26">  lev &lt;-<span class="st"> "*"</span></a>
-<a class="sourceLine" id="cb5-27" data-line-number="27">  <span class="cf">if</span>(match.level) {</a>
-<a class="sourceLine" id="cb5-28" data-line-number="28">    <span class="cf">if</span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(targ.lev) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>) {</a>
-<a class="sourceLine" id="cb5-29" data-line-number="29">      targ.lev &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">max</a></span>(targ.lev)</a>
-<a class="sourceLine" id="cb5-30" data-line-number="30">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/warning">warning</a></span>(<span class="st">"Multiple single sound levels, choosing largest one"</span>)</a>
-<a class="sourceLine" id="cb5-31" data-line-number="31">    }</a>
-<a class="sourceLine" id="cb5-32" data-line-number="32">    ix1 &lt;-<span class="st"> </span>ix1 <span class="op">&amp;</span><span class="st"> </span>A_LEVEL <span class="op">==</span><span class="st"> </span>targ.lev</a>
-<a class="sourceLine" id="cb5-33" data-line-number="33">    ix2 &lt;-<span class="st"> </span>ix2 <span class="op">&amp;</span><span class="st"> </span>A_LEVEL <span class="op">==</span><span class="st"> </span>targ.lev</a>
-<a class="sourceLine" id="cb5-34" data-line-number="34">    lev &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/character">as.character</a></span>(targ.lev)</a>
-<a class="sourceLine" id="cb5-35" data-line-number="35">  }</a>
-<a class="sourceLine" id="cb5-36" data-line-number="36"></a>
-<a class="sourceLine" id="cb5-37" data-line-number="37">  <span class="cf">if</span>(AB.eqlevel) ix3 &lt;-<span class="st"> </span>ix3 <span class="op">&amp;</span><span class="st"> </span>(A_LEVEL <span class="op">==</span><span class="st"> </span>B_LEVEL)</a>
-<a class="sourceLine" id="cb5-38" data-line-number="38"></a>
-<a class="sourceLine" id="cb5-39" data-line-number="39">  sing1 &lt;-<span class="st"> </span>trials[ix1, <span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb5-40" data-line-number="40">  sing2 &lt;-<span class="st"> </span>trials[ix2, <span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb5-41" data-line-number="41">  duplx &lt;-<span class="st"> </span>trials[ix3, <span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb5-42" data-line-number="42">  success &lt;-<span class="st"> </span>REWARD[ix3]</a>
-<a class="sourceLine" id="cb5-43" data-line-number="43"></a>
-<a class="sourceLine" id="cb5-44" data-line-number="44">  <span class="cf">if</span>(go.by.soff) end.time &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">min</a></span>(SOFF[ix1 <span class="op">|</span><span class="st"> </span>ix2 <span class="op">|</span><span class="st"> </span>ix3])</a>
-<a class="sourceLine" id="cb5-45" data-line-number="45"></a>
-<a class="sourceLine" id="cb5-46" data-line-number="46">  spike.counter &lt;-<span class="st"> </span><span class="cf">function</span>(jj){</a>
-<a class="sourceLine" id="cb5-47" data-line-number="47">    jj1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/match">match</a></span>(jj, trial.id)</a>
-<a class="sourceLine" id="cb5-48" data-line-number="48">    spks &lt;-<span class="st"> </span>timestamps[[jj1]]</a>
-<a class="sourceLine" id="cb5-49" data-line-number="49">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/function">return</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sum">sum</a></span>(spks <span class="op">&gt;</span><span class="st"> </span>start.time <span class="op">&amp;</span><span class="st"> </span>spks <span class="op">&lt;</span><span class="st"> </span>end.time))</a>
-<a class="sourceLine" id="cb5-50" data-line-number="50">  }</a>
-<a class="sourceLine" id="cb5-51" data-line-number="51"></a>
-<a class="sourceLine" id="cb5-52" data-line-number="52">  Acounts &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">sapply</a></span>(sing1, spike.counter)</a>
-<a class="sourceLine" id="cb5-53" data-line-number="53">  Bcounts &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">sapply</a></span>(sing2, spike.counter)</a>
-<a class="sourceLine" id="cb5-54" data-line-number="54">  ABcounts &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">sapply</a></span>(duplx, spike.counter)</a>
-<a class="sourceLine" id="cb5-55" data-line-number="55"></a>
-<a class="sourceLine" id="cb5-56" data-line-number="56">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/detach">detach</a></span>(trials)</a>
-<a class="sourceLine" id="cb5-57" data-line-number="57">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/detach">detach</a></span>(spiketimes)</a>
-<a class="sourceLine" id="cb5-58" data-line-number="58"></a>
-<a class="sourceLine" id="cb5-59" data-line-number="59">  <span class="cf">if</span> ((<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(Acounts)<span class="op">==</span><span class="dv">0</span>)<span class="op">|</span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(Bcounts<span class="op">==</span><span class="dv">0</span>))<span class="op">|</span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(ABcounts<span class="op">==</span><span class="dv">0</span>))){</a>
-<a class="sourceLine" id="cb5-60" data-line-number="60">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/stop">stop</a></span>(<span class="st">"All the spike counts are 0 under a specific condition."</span>)</a>
-<a class="sourceLine" id="cb5-61" data-line-number="61">  }</a>
-<a class="sourceLine" id="cb5-62" data-line-number="62">  </a>
-<a class="sourceLine" id="cb5-63" data-line-number="63">  <span class="cf">if</span> ((<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(Acounts)<span class="op">==</span><span class="dv">1</span>)<span class="op">|</span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(Bcounts)<span class="op">==</span><span class="dv">1</span>)<span class="op">|</span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(ABcounts)<span class="op">==</span><span class="dv">1</span>)){</a>
-<a class="sourceLine" id="cb5-64" data-line-number="64">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/stop">stop</a></span>(<span class="st">"Only 1 available trial under a specific condition."</span>)</a>
-<a class="sourceLine" id="cb5-65" data-line-number="65">  }</a>
-<a class="sourceLine" id="cb5-66" data-line-number="66">  </a>
-<a class="sourceLine" id="cb5-67" data-line-number="67">  s1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(frq[<span class="dv">1</span>],<span class="st">"Hz "</span>,pos[<span class="dv">1</span>],<span class="st">"deg "</span>,lev,<span class="st">"Db "</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb5-68" data-line-number="68">  s2 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(frq[<span class="dv">2</span>],<span class="st">"Hz "</span>,pos[<span class="dv">2</span>],<span class="st">"deg "</span>,lev,<span class="st">"Db "</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb5-69" data-line-number="69">  dp &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(<span class="st">"Duplex: "</span>, lev, <span class="st">"Db "</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb5-70" data-line-number="70">  res=<span class="kw"><a href="../reference/prml_tests_f.html">prml_tests_f</a></span>(<span class="dt">xA=</span>Acounts, <span class="dt">xB=</span>Bcounts, <span class="dt">xAB=</span>ABcounts, <span class="dt">labels =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(s1, s2, dp),<span class="dt">e=</span><span class="dv">0</span>,</a>
-<a class="sourceLine" id="cb5-71" data-line-number="71">                   <span class="dt">remove.zeros=</span>remove.zeros)</a>
-<a class="sourceLine" id="cb5-72" data-line-number="72">  <span class="co"># By default:</span></a>
-<a class="sourceLine" id="cb5-73" data-line-number="73">  <span class="co">#remove.zeros = FALSE</span></a>
-<a class="sourceLine" id="cb5-74" data-line-number="74">  <span class="co">#mu_l="min",mu_u="max",gamma.pars = c(0.5, 2e-10), </span></a>
-<a class="sourceLine" id="cb5-75" data-line-number="75">  <span class="co">#n_gq = 20, n_mu = 100, n_per = 100, alpha = 0.5</span></a>
-<a class="sourceLine" id="cb5-76" data-line-number="76">  </a>
-<a class="sourceLine" id="cb5-77" data-line-number="77">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/function">return</a></span>(res)</a>
-<a class="sourceLine" id="cb5-78" data-line-number="78">}</a></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">prml.from.fname.f &lt;-<span class="st"> </span><span class="cf">function</span>(fname, <span class="dt">data.path =</span> <span class="st">"Data"</span>, <span class="dt">on.reward =</span> <span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">                        <span class="dt">match.level =</span> <span class="ot">FALSE</span>, <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>, <span class="dt">outfile =</span> <span class="st">""</span>,</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">                        <span class="dt">start =</span> <span class="dv">0</span>, <span class="dt">end =</span> <span class="dv">600</span>, <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>){</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">  infile1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(data.path, <span class="st">"/JA/"</span>, fname, <span class="st">".txt"</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">  </a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">  trials &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(infile1, <span class="dt">col.names =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"TRIAL"</span>, <span class="st">"TASKID"</span>, <span class="st">"A_FREQ"</span>, <span class="st">"B_FREQ"</span>, <span class="st">"XA"</span>, <span class="st">"XB"</span>, <span class="st">"REWARD"</span>, <span class="st">"A_LEVEL"</span>, <span class="st">"B_LEVEL"</span>))</a>
-<a class="sourceLine" id="cb6-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">  infile2 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(data.path, <span class="st">"/JA/"</span>, fname, <span class="st">"_spiketimes.txt"</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">  spiketimes &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(infile2, <span class="dt">col.names =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"TRIAL2"</span>, <span class="st">"TIMES"</span>))</a>
-<a class="sourceLine" id="cb6-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">  FREQS &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unique">unique</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(trials<span class="op">$</span>A_FREQ, trials<span class="op">$</span>B_FREQ))</a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">  alt.freq &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sort">sort</a></span>(FREQS[FREQS <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> <span class="op">&amp;</span><span class="st"> </span>FREQS <span class="op">!=</span><span class="st"> </span><span class="dv">742</span>])</a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">  alt.pos &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="op">-</span><span class="dv">24</span>, <span class="dv">-6</span>, <span class="dv">6</span>, <span class="dv">24</span>)</a>
-<a class="sourceLine" id="cb6-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">  <span class="cf">for</span>(fr <span class="cf">in</span> alt.freq){</a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">    <span class="cf">for</span>(po <span class="cf">in</span> alt.pos){</a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>({lbf &lt;-<span class="kw">prml.from.tri.f</span>(trials, spiketimes, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(fr, <span class="dv">742</span>), <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(po, <span class="dv">-144</span><span class="op">/</span>po),</a>
-<a class="sourceLine" id="cb6-20" data-line-number="20">                            on.reward, start, end, match.level, AB.eqlevel,</a>
-<a class="sourceLine" id="cb6-21" data-line-number="21">                            <span class="dt">go.by.soff=</span><span class="ot">FALSE</span>, <span class="dt">remove.zeros=</span>remove.zeros);</a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(fname, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(fr, po, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unlist">unlist</a></span>(lbf<span class="op">$</span>out1)), <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">file =</span> outfile, <span class="dt">append =</span> <span class="ot">TRUE</span>);</a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"mix"</span>, fname, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(fr, po, lbf<span class="op">$</span>out2<span class="op">$</span>mix_pf), <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"mix_"</span>,outfile), <span class="dt">append =</span> <span class="ot">TRUE</span>);</a>
-<a class="sourceLine" id="cb6-24" data-line-number="24">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"int"</span>, fname, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(fr, po, lbf<span class="op">$</span>out2<span class="op">$</span>int_pf), <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"int_out_"</span>,outfile), <span class="dt">append =</span> <span class="ot">TRUE</span>);</a>
-<a class="sourceLine" id="cb6-25" data-line-number="25">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"outA"</span>, fname, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(fr, po, lbf<span class="op">$</span>out2<span class="op">$</span>outA_pf), <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"int_out_"</span>,outfile), <span class="dt">append =</span> <span class="ot">TRUE</span>);</a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"outB"</span>, fname, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(fr, po, lbf<span class="op">$</span>out2<span class="op">$</span>outB_pf), <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"int_out_"</span>,outfile), <span class="dt">append =</span> <span class="ot">TRUE</span>);</a>
-<a class="sourceLine" id="cb6-27" data-line-number="27">      })</a>
-<a class="sourceLine" id="cb6-28" data-line-number="28">    }</a>
-<a class="sourceLine" id="cb6-29" data-line-number="29">  }</a>
-<a class="sourceLine" id="cb6-30" data-line-number="30">}</a></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Random">set.seed</a></span>(<span class="dv">123</span>)</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="co">#fnames -- a list of names of the .txt files in the folder</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">fnames=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/scan">scan</a></span>(<span class="st">"JA230_list_randomly_interleaved.txt"</span>, <span class="st">"a"</span>)</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="cf">for</span> (file.name <span class="cf">in</span> fnames){</a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">  <span class="co">#"Data" is the folder you store all the .txt files</span></a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">  <span class="co">#"result.txt" is the folder you store the result</span></a>
-<a class="sourceLine" id="cb7-7" data-line-number="7">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>(<span class="kw">prml.from.fname.f</span>(file.name, <span class="dt">data.path =</span> <span class="st">"Data"</span>, <span class="dt">on.reward =</span> <span class="ot">TRUE</span>, <span class="dt">match.level =</span> <span class="ot">FALSE</span>, <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>, <span class="dt">outfile =</span> <span class="st">"result.txt"</span>,</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">              <span class="dt">start =</span> <span class="dv">0</span>, <span class="dt">end =</span> <span class="dv">600</span>, <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>))</a>
-<a class="sourceLine" id="cb7-9" data-line-number="9">}</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ex">sbatch</span> prml_analysis.sh</a></code></pre></div>
+<ul>
+<li>Check the status</li>
+</ul>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ex">squeue</span> -u ACCOUNT</a></code></pre></div>
 </div>
-<div id="visualization-of-the-classification" class="section level2">
+<div id="fetch-results-and-visualizations" class="section level2">
 <h2 class="hasAnchor">
-<a href="#visualization-of-the-classification" class="anchor"></a>Visualization of the classification</h2>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="co">#read the raw data</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">raw=<span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(<span class="dt">file =</span> <span class="st">"result.txt"</span>,<span class="dt">header =</span> <span class="ot">FALSE</span>,<span class="dt">sep =</span> <span class="st">" "</span>,<span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>,<span class="dt">fill =</span> <span class="ot">TRUE</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e=</span><span class="dv">0</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#plug in the value of e you set in prml_tests()</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="op">-</span>V15)</a>
-<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/names">names</a></span>(raw)=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"CellId"</span>,  <span class="st">"AltFreq"</span>,  <span class="st">"AltPos"</span>,   <span class="st">"SepBF"</span>, <span class="st">"PrMix"</span>, <span class="st">"PrInt"</span>, <span class="st">"PrOut"</span>, <span class="st">"PrSing"</span>,   <span class="st">"WinModels"</span>, <span class="st">"Pval1"</span>,   <span class="st">"Pval2"</span>, <span class="st">"SampSizeA"</span>, <span class="st">"SampSizeB"</span>, <span class="st">"SampSizeAB"</span>,<span class="st">"e"</span>)</a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">model.names=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Mixture"</span>,<span class="st">"Intermediate"</span>,<span class="st">"Outside"</span>,<span class="st">"Single"</span>)</a>
-<a class="sourceLine" id="cb8-7" data-line-number="7">raw=raw<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(CellId,AltFreq,AltPos,<span class="dt">sep =</span> <span class="st">"."</span>))</a>
-<a class="sourceLine" id="cb8-8" data-line-number="8"><span class="co">#filter out data that has errors</span></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9">cids=raw<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>WinModels<span class="op">%in%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">4</span>))<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(cid)</a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">rawf=raw<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>cid<span class="op">%in%</span>cids)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-11" data-line-number="11"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinModel=</span>model.names[WinModels],<span class="dt">WinPr=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">pmax</a></span>(PrMix,PrInt,PrOut,PrSing))</a>
-<a class="sourceLine" id="cb8-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb8-13" data-line-number="13"><span class="co">#triplets not filtered by PRML filter</span></a>
-<a class="sourceLine" id="cb8-14" data-line-number="14">tri_unfilter=rawf<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-15" data-line-number="15"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(SampSizeA<span class="op">&gt;=</span><span class="dv">5</span>,SampSizeB<span class="op">&gt;=</span><span class="dv">5</span>,SampSizeAB<span class="op">&gt;=</span><span class="dv">5</span>,SepBF<span class="op">&gt;=</span><span class="dv">3</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#well-separated and enough sample size</span></a>
-<a class="sourceLine" id="cb8-16" data-line-number="16"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinProb=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cut">cut</a></span>(WinPr, <span class="dt">breaks=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>,<span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.95</span>, <span class="fl">1.01</span>),<span class="dt">include.lowest =</span> <span class="ot">TRUE</span>)) <span class="co">#cut the winning probabilities to four categories</span></a>
-<a class="sourceLine" id="cb8-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb8-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb8-19" data-line-number="19"><span class="co">#triplets filtered by PRML filter</span></a>
-<a class="sourceLine" id="cb8-20" data-line-number="20">tri_filter=tri_unfilter <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb8-21" data-line-number="21"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">invPval1=</span><span class="dv">1</span><span class="op">/</span>Pval1,<span class="dt">invPval2=</span><span class="dv">1</span><span class="op">/</span>Pval2)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-22" data-line-number="22"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(invPval1<span class="op">&lt;=</span><span class="dv">20</span>,invPval2<span class="op">&lt;=</span><span class="dv">20</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#filter by PRML filter.</span></a>
-<a class="sourceLine" id="cb8-23" data-line-number="23"><span class="st">  </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="op">-</span>invPval1,<span class="op">-</span>invPval2)</a>
-<a class="sourceLine" id="cb8-24" data-line-number="24"></a>
-<a class="sourceLine" id="cb8-25" data-line-number="25">tri=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cbind">rbind</a></span>(tri_unfilter,tri_filter)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-26" data-line-number="26"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">group=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"unfiltered"</span>,<span class="st">"filtered"</span>),</a>
-<a class="sourceLine" id="cb8-27" data-line-number="27">                   <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(tri_unfilter),<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(tri_filter))))<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-28" data-line-number="28"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinModel=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/factor">factor</a></span>(WinModel,<span class="dt">levels =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Outside"</span>,<span class="st">"Single"</span>,<span class="st">"Intermediate"</span>,<span class="st">"Mixture"</span>)))</a>
-<a class="sourceLine" id="cb8-29" data-line-number="29"></a>
-<a class="sourceLine" id="cb8-30" data-line-number="30"><span class="co">#save as a .RData</span></a>
-<a class="sourceLine" id="cb8-31" data-line-number="31"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/save">save</a></span>(tri,<span class="dt">file =</span> <span class="st">"tri_filter_unfilter.RData"</span>)</a></code></pre></div>
-<p>Visualization</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"ggplot2"</span>)</a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(<span class="dt">data =</span> tri,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x =</span> WinModel,<span class="dt">color=</span>WinProb,<span class="dt">fill=</span>WinProb))<span class="op">+</span></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_bar">geom_bar</a></span>(<span class="dt">stat=</span><span class="st">"count"</span>,<span class="dt">position =</span> <span class="st">"stack"</span>)<span class="op">+</span></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/facet_grid">facet_grid</a></span>(<span class="op">~</span>group)<span class="op">+</span></a>
-<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_text">geom_text</a></span>(<span class="dt">stat=</span><span class="st">'count'</span>, <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">label=</span>..count..), <span class="dt">position =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/position_stack">position_stack</a></span>(<span class="dt">vjust =</span> <span class="fl">0.5</span>),<span class="dt">size=</span><span class="dv">3</span>,<span class="dt">color=</span><span class="st">"black"</span>)<span class="op">+</span></a>
-<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_discrete">scale_x_discrete</a></span>(<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span></a>
-<a class="sourceLine" id="cb9-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_grey">scale_colour_grey</a></span>(<span class="dt">start =</span> <span class="fl">0.9</span>,<span class="dt">end=</span><span class="fl">0.3</span>,<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span><span class="st"> </span><span class="co">#if you use grey color</span></a>
-<a class="sourceLine" id="cb9-9" data-line-number="9"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_grey">scale_fill_grey</a></span>(<span class="dt">start =</span> <span class="fl">0.9</span>,<span class="dt">end=</span><span class="fl">0.3</span>,<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span></a>
-<a class="sourceLine" id="cb9-10" data-line-number="10"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggtheme">theme_bw</a></span>()</a>
-<a class="sourceLine" id="cb9-11" data-line-number="11"><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggsave">ggsave</a></span>(<span class="dt">filename =</span> <span class="st">"plot.pdf"</span>,<span class="dt">width =</span> <span class="dv">8</span>,<span class="dt">height =</span> <span class="dv">4</span>)</a></code></pre></div>
-<p><img src="images/plot.png"><!-- --></p>
+<a href="#fetch-results-and-visualizations" class="anchor"></a>Fetch Results and Visualizations</h2>
+<p>Assume you create a folder named <code>Results</code> to store all the results of the PRML analysis.</p>
+<ul>
+<li>Go to your local folder <code>Results</code>
+</li>
+</ul>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="bu">cd</span> PATH_TO_RESULTS</a></code></pre></div>
+<ul>
+<li>Fetch the result in compute cluster back to your local folder <code>Results</code>.</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="fu">rsync</span> -av ACCOUNT@dcc-slogin.oit.duke.edu:./Analysis/result_*.txt PATH_TO_RESULTS</a></code></pre></div>
+<ul>
+<li>Check the result in the local folder <code>Results</code>
+</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="fu">ls</span></a></code></pre></div>
+<ul>
+<li>R code to clean the data and store it into a <code>.RData</code> file</li>
+</ul>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"tidyverse"</span>)</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">filelist =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list.files">list.files</a></span>(<span class="dt">pattern =</span> <span class="st">".*.txt"</span>)</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">raw =<span class="st"> </span><span class="kw"><a href="https://purrr.tidyverse.org/reference/map.html">map_df</a></span>(filelist, <span class="cf">function</span>(x) {</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5">  <span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(</a>
+<a class="sourceLine" id="cb14-6" data-line-number="6">    x,</a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">    <span class="dt">header =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb14-8" data-line-number="8">    <span class="dt">sep =</span> <span class="st">" "</span>,</a>
+<a class="sourceLine" id="cb14-9" data-line-number="9">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb14-10" data-line-number="10">    <span class="dt">fill =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb14-11" data-line-number="11">  ) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-12" data-line-number="12"><span class="st">    </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>V2 <span class="op">%in%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Error"</span>, <span class="st">""</span>))</a>
+<a class="sourceLine" id="cb14-13" data-line-number="13">}) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-14" data-line-number="14"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e =</span> <span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#plug in the value of e you set in prml_tests()</span></a>
+<a class="sourceLine" id="cb14-15" data-line-number="15"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="op">-</span>V15)</a>
+<a class="sourceLine" id="cb14-16" data-line-number="16"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/names">names</a></span>(raw) =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(</a>
+<a class="sourceLine" id="cb14-17" data-line-number="17">  <span class="st">"CellId"</span>,</a>
+<a class="sourceLine" id="cb14-18" data-line-number="18">  <span class="st">"AltFreq"</span>,</a>
+<a class="sourceLine" id="cb14-19" data-line-number="19">  <span class="st">"AltPos"</span>,</a>
+<a class="sourceLine" id="cb14-20" data-line-number="20">  <span class="st">"SepBF"</span>,</a>
+<a class="sourceLine" id="cb14-21" data-line-number="21">  <span class="st">"PrMix"</span>,</a>
+<a class="sourceLine" id="cb14-22" data-line-number="22">  <span class="st">"PrInt"</span>,</a>
+<a class="sourceLine" id="cb14-23" data-line-number="23">  <span class="st">"PrOut"</span>,</a>
+<a class="sourceLine" id="cb14-24" data-line-number="24">  <span class="st">"PrSing"</span>,</a>
+<a class="sourceLine" id="cb14-25" data-line-number="25">  <span class="st">"WinModels"</span>,</a>
+<a class="sourceLine" id="cb14-26" data-line-number="26">  <span class="st">"Pval1"</span>,</a>
+<a class="sourceLine" id="cb14-27" data-line-number="27">  <span class="st">"Pval2"</span>,</a>
+<a class="sourceLine" id="cb14-28" data-line-number="28">  <span class="st">"SampSizeA"</span>,</a>
+<a class="sourceLine" id="cb14-29" data-line-number="29">  <span class="st">"SampSizeB"</span>,</a>
+<a class="sourceLine" id="cb14-30" data-line-number="30">  <span class="st">"SampSizeAB"</span>,</a>
+<a class="sourceLine" id="cb14-31" data-line-number="31">  <span class="st">"e"</span></a>
+<a class="sourceLine" id="cb14-32" data-line-number="32">)</a>
+<a class="sourceLine" id="cb14-33" data-line-number="33">raw =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(</a>
+<a class="sourceLine" id="cb14-34" data-line-number="34">  <span class="dt">SepBF =</span> SepBF <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-35" data-line-number="35">  <span class="dt">PrMix =</span> PrMix <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-36" data-line-number="36">  <span class="dt">PrInt =</span> PrInt <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-37" data-line-number="37">  <span class="dt">PrOut =</span> PrOut <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-38" data-line-number="38">  <span class="dt">PrSing =</span> PrSing <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-39" data-line-number="39">  <span class="dt">WinModels =</span> WinModels <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-40" data-line-number="40">  <span class="dt">Pval1 =</span> Pval1 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-41" data-line-number="41">  <span class="dt">Pval2 =</span> Pval2 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-42" data-line-number="42">  <span class="dt">SampSizeA =</span> SampSizeA <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-43" data-line-number="43">  <span class="dt">SampSizeB =</span> SampSizeB <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb14-44" data-line-number="44">  <span class="dt">SampSizeAB =</span> SampSizeAB <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>()</a>
+<a class="sourceLine" id="cb14-45" data-line-number="45">)</a>
+<a class="sourceLine" id="cb14-46" data-line-number="46">model.names =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Mixture"</span>, <span class="st">"Intermediate"</span>, <span class="st">"Outside"</span>, <span class="st">"Single"</span>)</a>
+<a class="sourceLine" id="cb14-47" data-line-number="47">raw =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(CellId, AltFreq, AltPos, <span class="dt">sep =</span> <span class="st">"."</span>))</a>
+<a class="sourceLine" id="cb14-48" data-line-number="48"><span class="co">#filter out data that has errors</span></a>
+<a class="sourceLine" id="cb14-49" data-line-number="49">cids =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>WinModels <span class="op">%in%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">4</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(cid)</a>
+<a class="sourceLine" id="cb14-50" data-line-number="50">rawf =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>cid <span class="op">%in%</span><span class="st"> </span>cids) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-51" data-line-number="51"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinModel =</span> model.names[WinModels],</a>
+<a class="sourceLine" id="cb14-52" data-line-number="52">         <span class="dt">WinPr =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">pmax</a></span>(PrMix, PrInt, PrOut, PrSing))</a>
+<a class="sourceLine" id="cb14-53" data-line-number="53"></a>
+<a class="sourceLine" id="cb14-54" data-line-number="54"><span class="co">#triplets not filtered by PRML filter</span></a>
+<a class="sourceLine" id="cb14-55" data-line-number="55">tri_unfilter=rawf<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-56" data-line-number="56"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(SampSizeA<span class="op">&gt;=</span><span class="dv">5</span>,SampSizeB<span class="op">&gt;=</span><span class="dv">5</span>,SampSizeAB<span class="op">&gt;=</span><span class="dv">5</span>,SepBF<span class="op">&gt;=</span><span class="dv">3</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#well-separated and enough sample size</span></a>
+<a class="sourceLine" id="cb14-57" data-line-number="57"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinProb=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cut">cut</a></span>(WinPr, <span class="dt">breaks=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>,<span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.95</span>, <span class="fl">1.01</span>),<span class="dt">include.lowest =</span> <span class="ot">TRUE</span>)) <span class="co">#cut the winning probabilities to four categories</span></a>
+<a class="sourceLine" id="cb14-58" data-line-number="58"></a>
+<a class="sourceLine" id="cb14-59" data-line-number="59"></a>
+<a class="sourceLine" id="cb14-60" data-line-number="60"><span class="co">#triplets filtered by PRML filter</span></a>
+<a class="sourceLine" id="cb14-61" data-line-number="61">tri_filter=tri_unfilter <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb14-62" data-line-number="62"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">invPval1=</span><span class="dv">1</span><span class="op">/</span>Pval1,<span class="dt">invPval2=</span><span class="dv">1</span><span class="op">/</span>Pval2)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-63" data-line-number="63"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(invPval1<span class="op">&lt;=</span><span class="dv">20</span>,invPval2<span class="op">&lt;=</span><span class="dv">20</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#filter by PRML filter.</span></a>
+<a class="sourceLine" id="cb14-64" data-line-number="64"><span class="st">  </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="op">-</span>invPval1,<span class="op">-</span>invPval2)</a>
+<a class="sourceLine" id="cb14-65" data-line-number="65"></a>
+<a class="sourceLine" id="cb14-66" data-line-number="66">tri=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cbind">rbind</a></span>(tri_unfilter,tri_filter)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-67" data-line-number="67"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">group=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"unfiltered"</span>,<span class="st">"filtered"</span>),</a>
+<a class="sourceLine" id="cb14-68" data-line-number="68">                   <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(tri_unfilter),<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(tri_filter))))<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb14-69" data-line-number="69"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinModel=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/factor">factor</a></span>(WinModel,<span class="dt">levels =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Outside"</span>,<span class="st">"Single"</span>,<span class="st">"Intermediate"</span>,<span class="st">"Mixture"</span>)))</a>
+<a class="sourceLine" id="cb14-70" data-line-number="70"></a>
+<a class="sourceLine" id="cb14-71" data-line-number="71"><span class="co">#save as a .RData</span></a>
+<a class="sourceLine" id="cb14-72" data-line-number="72"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/save">save</a></span>(tri,<span class="dt">file =</span> <span class="st">"tri_filter_unfilter.RData"</span>)</a></code></pre></div>
+<ul>
+<li>Visualization</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"ggplot2"</span>)</a>
+<a class="sourceLine" id="cb15-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb15-3" data-line-number="3"><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(<span class="dt">data =</span> tri,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x =</span> WinModel,<span class="dt">color=</span>WinProb,<span class="dt">fill=</span>WinProb))<span class="op">+</span></a>
+<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_bar">geom_bar</a></span>(<span class="dt">stat=</span><span class="st">"count"</span>,<span class="dt">position =</span> <span class="st">"stack"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/facet_grid">facet_grid</a></span>(<span class="op">~</span>group)<span class="op">+</span></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_text">geom_text</a></span>(<span class="dt">stat=</span><span class="st">'count'</span>, <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">label=</span>..count..), <span class="dt">position =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/position_stack">position_stack</a></span>(<span class="dt">vjust =</span> <span class="fl">0.5</span>),<span class="dt">size=</span><span class="dv">3</span>,<span class="dt">color=</span><span class="st">"black"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb15-7" data-line-number="7"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_discrete">scale_x_discrete</a></span>(<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span></a>
+<a class="sourceLine" id="cb15-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_grey">scale_colour_grey</a></span>(<span class="dt">start =</span> <span class="fl">0.9</span>,<span class="dt">end=</span><span class="fl">0.3</span>,<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span><span class="st"> </span><span class="co">#if you use grey color</span></a>
+<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_grey">scale_fill_grey</a></span>(<span class="dt">start =</span> <span class="fl">0.9</span>,<span class="dt">end=</span><span class="fl">0.3</span>,<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span></a>
+<a class="sourceLine" id="cb15-10" data-line-number="10"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggtheme">theme_bw</a></span>()</a>
+<a class="sourceLine" id="cb15-11" data-line-number="11"><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggsave">ggsave</a></span>(<span class="dt">filename =</span> <span class="st">"plot.pdf"</span>,<span class="dt">width =</span> <span class="dv">8</span>,<span class="dt">height =</span> <span class="dv">4</span>)</a></code></pre></div>
 </div>
-<div id="visualization-of-the-density-estimation" class="section level2">
+<div id="notes" class="section level2">
 <h2 class="hasAnchor">
-<a href="#visualization-of-the-density-estimation" class="anchor"></a>Visualization of the density estimation</h2>
-<p>Read all the data to data.frame.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="co"># read all density estimation .txt file</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2">e_=<span class="dv">0</span> <span class="co"># the value of e </span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="co">#int and out</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">int=<span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(<span class="st">"int_out_result.txt"</span>,<span class="dt">stringsAsFactors =</span> F,<span class="dt">header =</span> F)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e=</span>e_)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(V2,V3,V4,<span class="dt">sep =</span> <span class="st">"."</span>))</a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="co">#mix</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10">mix=<span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(<span class="st">"mix_result.txt"</span>,<span class="dt">stringsAsFactors =</span> F,<span class="dt">header =</span> F)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e=</span>e_,<span class="dt">V5=</span>e_<span class="op">+</span>(<span class="dv">1-2</span><span class="op">*</span>e_)<span class="op">*</span>V5,<span class="dt">V6=</span>e_<span class="op">+</span>(<span class="dv">1-2</span><span class="op">*</span>e_)<span class="op">*</span>V6)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb10-12" data-line-number="12"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(V2,V3,V4,<span class="dt">sep =</span> <span class="st">"."</span>)) </a>
-<a class="sourceLine" id="cb10-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb10-14" data-line-number="14"><span class="co">#cid is id for the triplets. It can help you specify the triplets you would like to include.</span></a></code></pre></div>
-<p>Here I only provides visualization on the density estimation of mixing density under ‘Mixture’ and ‘Intermediate’ assumption.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="co"># Here I draw the filtered triplets.</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3">dfres=tri<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(group<span class="op">==</span><span class="st">"filtered"</span>)</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb11-6" data-line-number="6">ids=dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(cid)</a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="kw"><a href="https://www.rdocumentation.org/packages/grDevices/topics/pdf">pdf</a></span>(<span class="dt">height =</span> <span class="dv">3</span>, <span class="dt">width =</span> <span class="dv">5</span>, <span class="dt">file =</span> <span class="st">"plot_pdf.pdf"</span>)</a>
-<a class="sourceLine" id="cb11-9" data-line-number="9"><span class="cf">for</span> (i <span class="cf">in</span> ids){</a>
-<a class="sourceLine" id="cb11-10" data-line-number="10">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>({</a>
-<a class="sourceLine" id="cb11-11" data-line-number="11">    int0=int<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i,V1<span class="op">==</span><span class="st">"int"</span>)<span class="op">%&gt;%</span>.[,<span class="dv">5</span><span class="op">:</span><span class="dv">104</span>]<span class="op">%&gt;%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/t">t</a></span>()</a>
-<a class="sourceLine" id="cb11-12" data-line-number="12">    df1=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">ind=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/seq">seq</a></span>(e_,<span class="dv">1</span><span class="op">-</span>e_,<span class="dt">length.out =</span> <span class="dv">100</span>),<span class="dt">y=</span>int0,<span class="dt">e=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(e_,<span class="dv">100</span>),<span class="dt">model=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="st">"int"</span>,<span class="dv">100</span>))</a>
-<a class="sourceLine" id="cb11-13" data-line-number="13">    mix0=mix<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span>.[,<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">5</span>,<span class="dv">6</span>)]<span class="op">%&gt;%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/t">t</a></span>()</a>
-<a class="sourceLine" id="cb11-14" data-line-number="14">    df2=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">ind=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>,<span class="dv">1</span>),<span class="dt">y=</span>mix0,<span class="dt">e=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="dv">0</span>,<span class="dv">2</span>))</a>
-<a class="sourceLine" id="cb11-15" data-line-number="15">    p=<span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(<span class="dt">data =</span> df1,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>ind,<span class="dt">y=</span>y))<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-16" data-line-number="16"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_path">geom_line</a></span>()<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-17" data-line-number="17"><span class="st">      </span><span class="co">#facet_grid(.~e)+</span></a>
-<a class="sourceLine" id="cb11-18" data-line-number="18"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_point">geom_point</a></span>(<span class="dt">data=</span>df2,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>ind,<span class="dt">y=</span>y))<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-19" data-line-number="19"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_hline</a></span>(<span class="dt">yintercept =</span> e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-20" data-line-number="20"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_hline</a></span>(<span class="dt">yintercept =</span> <span class="dv">1</span><span class="op">-</span>e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-21" data-line-number="21"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-22" data-line-number="22"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> <span class="dv">1</span><span class="op">-</span>e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-23" data-line-number="23"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/labs">ggtitle</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(i,<span class="st">";"</span>),</a>
-<a class="sourceLine" id="cb11-24" data-line-number="24">              <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(WinModel),</a>
-<a class="sourceLine" id="cb11-25" data-line-number="25">                     <span class="st">";WinProb:"</span>,</a>
-<a class="sourceLine" id="cb11-26" data-line-number="26">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(WinPr)<span class="op">%&gt;%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Round">round</a></span>(.,<span class="dv">4</span>),</a>
-<a class="sourceLine" id="cb11-27" data-line-number="27">                     <span class="st">";SizeA:"</span>,</a>
-<a class="sourceLine" id="cb11-28" data-line-number="28">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(SampSizeA),</a>
-<a class="sourceLine" id="cb11-29" data-line-number="29">                     <span class="st">";SizeB:"</span>,</a>
-<a class="sourceLine" id="cb11-30" data-line-number="30">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(SampSizeB),</a>
-<a class="sourceLine" id="cb11-31" data-line-number="31">                     <span class="st">";SizeAB:"</span>,</a>
-<a class="sourceLine" id="cb11-32" data-line-number="32">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(SampSizeAB)</a>
-<a class="sourceLine" id="cb11-33" data-line-number="33">              ))<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-34" data-line-number="34"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggtheme">theme_bw</a></span>()<span class="op">+</span></a>
-<a class="sourceLine" id="cb11-35" data-line-number="35"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/labs">xlab</a></span>(<span class="st">""</span>)</a>
-<a class="sourceLine" id="cb11-36" data-line-number="36">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/print">print</a></span>(p)</a>
-<a class="sourceLine" id="cb11-37" data-line-number="37">  })</a>
-<a class="sourceLine" id="cb11-38" data-line-number="38">}</a>
-<a class="sourceLine" id="cb11-39" data-line-number="39"><span class="kw"><a href="https://www.rdocumentation.org/packages/grDevices/topics/dev">dev.off</a></span>()</a></code></pre></div>
-<p><img src="images/plot_pdf.png"><!-- --></p>
+<a href="#notes" class="anchor"></a>Notes</h2>
+<ul>
+<li>Be careful to match <code>n_parts</code> in <code>Preparation</code> with <code>array=</code> in <code>Batch Script</code>; <code>-c</code> in <code>Batch Script</code> to the first argument of the R script in <code>Batch Script</code>.</li>
+<li>If you run the code several times, be sure to remove the old files (use <code>rm</code> in bash). Or, add the day you running the code before all the files’ names.</li>
+<li>Modify the R script and Batch script to feed your need. Here I just provide a template for convenience.</li>
+<li>Can check the .out file within <code>others</code> folder to see the elapse time. (For example, 4218.462s for <code><a href="../reference/prml_tests.html">prml_tests()</a></code> through 40 files in JA.)</li>
+</ul>
+</div>
+<div id="another-r-script-example" class="section level2">
+<h2 class="hasAnchor">
+<a href="#another-r-script-example" class="anchor"></a>Another R Script Example</h2>
+<p>This R script is for applying <code><a href="../reference/prml_tests_f.html">prml_tests_f()</a></code>.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2">{</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3">  args =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/commandArgs">commandArgs</a></span>(<span class="dt">trailingOnly =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb16-4" data-line-number="4">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/stopifnot">stopifnot</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(args) <span class="op">==</span><span class="st"> </span><span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb16-5" data-line-number="5">  </a>
+<a class="sourceLine" id="cb16-6" data-line-number="6">  n_parallel =<span class="st"> </span>args[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb16-7" data-line-number="7">  file_number =<span class="st"> </span>args[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb16-8" data-line-number="8">  </a>
+<a class="sourceLine" id="cb16-9" data-line-number="9">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/message">suppressMessages</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"statmod"</span>))</a>
+<a class="sourceLine" id="cb16-10" data-line-number="10">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/message">suppressMessages</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"dplyr"</span>))</a>
+<a class="sourceLine" id="cb16-11" data-line-number="11">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/message">suppressMessages</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"purrr"</span>))</a>
+<a class="sourceLine" id="cb16-12" data-line-number="12">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/message">suppressMessages</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"prml"</span>))</a>
+<a class="sourceLine" id="cb16-13" data-line-number="13">  </a>
+<a class="sourceLine" id="cb16-14" data-line-number="14">  prml.from.tri.f &lt;-<span class="st"> </span><span class="cf">function</span>(trials,</a>
+<a class="sourceLine" id="cb16-15" data-line-number="15">                              spiketimes,</a>
+<a class="sourceLine" id="cb16-16" data-line-number="16">                              <span class="dt">frq =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">1100</span>, <span class="dv">742</span>),</a>
+<a class="sourceLine" id="cb16-17" data-line-number="17">                              <span class="dt">pos =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">24</span>,<span class="op">-</span><span class="dv">6</span>),</a>
+<a class="sourceLine" id="cb16-18" data-line-number="18">                              <span class="dt">on.reward =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb16-19" data-line-number="19">                              <span class="dt">start.time =</span> <span class="dv">0</span>,</a>
+<a class="sourceLine" id="cb16-20" data-line-number="20">                              <span class="dt">end.time =</span> <span class="dv">600</span>,</a>
+<a class="sourceLine" id="cb16-21" data-line-number="21">                              <span class="dt">match.level =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-22" data-line-number="22">                              <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-23" data-line-number="23">                              <span class="dt">go.by.soff =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-24" data-line-number="24">                              <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-25" data-line-number="25">                              ...) {</a>
+<a class="sourceLine" id="cb16-26" data-line-number="26">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/attach">attach</a></span>(trials)</a>
+<a class="sourceLine" id="cb16-27" data-line-number="27">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/attach">attach</a></span>(spiketimes)</a>
+<a class="sourceLine" id="cb16-28" data-line-number="28">    </a>
+<a class="sourceLine" id="cb16-29" data-line-number="29">    timestamps &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/split">split</a></span>(TIMES, TRIAL2)</a>
+<a class="sourceLine" id="cb16-30" data-line-number="30">    ntrials &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(timestamps)</a>
+<a class="sourceLine" id="cb16-31" data-line-number="31">    trial.id &lt;-</a>
+<a class="sourceLine" id="cb16-32" data-line-number="32"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/names">names</a></span>(timestamps)) <span class="co">## same as unique(TRIAL2)</span></a>
+<a class="sourceLine" id="cb16-33" data-line-number="33">    </a>
+<a class="sourceLine" id="cb16-34" data-line-number="34">    ix1 &lt;-<span class="st"> </span>TASKID <span class="op">==</span><span class="st"> </span><span class="dv">8</span> <span class="op">&amp;</span><span class="st"> </span>A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">1</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb16-35" data-line-number="35">    ix2 &lt;-<span class="st"> </span>TASKID <span class="op">==</span><span class="st"> </span><span class="dv">8</span> <span class="op">&amp;</span><span class="st"> </span>A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb16-36" data-line-number="36">    ix3 &lt;-</a>
+<a class="sourceLine" id="cb16-37" data-line-number="37"><span class="st">      </span>TASKID <span class="op">==</span><span class="st"> </span><span class="dv">12</span> <span class="op">&amp;</span></a>
+<a class="sourceLine" id="cb16-38" data-line-number="38"><span class="st">      </span>(A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">1</span>] <span class="op">&amp;</span></a>
+<a class="sourceLine" id="cb16-39" data-line-number="39"><span class="st">         </span>B_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">2</span>] <span class="op">&amp;</span></a>
+<a class="sourceLine" id="cb16-40" data-line-number="40"><span class="st">         </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">1</span>] <span class="op">&amp;</span></a>
+<a class="sourceLine" id="cb16-41" data-line-number="41"><span class="st">         </span>XB <span class="op">==</span><span class="st"> </span>pos[<span class="dv">2</span>]) <span class="op">|</span></a>
+<a class="sourceLine" id="cb16-42" data-line-number="42"><span class="st">      </span>(A_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>B_FREQ <span class="op">==</span><span class="st"> </span>frq[<span class="dv">1</span>] <span class="op">&amp;</span><span class="st"> </span>XA <span class="op">==</span><span class="st"> </span>pos[<span class="dv">2</span>] <span class="op">&amp;</span><span class="st"> </span>XB <span class="op">==</span><span class="st"> </span>pos[<span class="dv">1</span>])</a>
+<a class="sourceLine" id="cb16-43" data-line-number="43">    </a>
+<a class="sourceLine" id="cb16-44" data-line-number="44">    <span class="cf">if</span> (on.reward) {</a>
+<a class="sourceLine" id="cb16-45" data-line-number="45">      ix1 &lt;-<span class="st"> </span>ix1 <span class="op">&amp;</span><span class="st"> </span>REWARD <span class="op">==</span><span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb16-46" data-line-number="46">      ix2 &lt;-<span class="st"> </span>ix2 <span class="op">&amp;</span><span class="st"> </span>REWARD <span class="op">==</span><span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb16-47" data-line-number="47">      ix3 &lt;-<span class="st"> </span>ix3 <span class="op">&amp;</span><span class="st"> </span>REWARD <span class="op">==</span><span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb16-48" data-line-number="48">    }</a>
+<a class="sourceLine" id="cb16-49" data-line-number="49">    </a>
+<a class="sourceLine" id="cb16-50" data-line-number="50">    blev &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sort">sort</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unique">unique</a></span>(B_LEVEL[ix3]))</a>
+<a class="sourceLine" id="cb16-51" data-line-number="51">    targ.lev &lt;-<span class="st"> </span>blev[blev <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>]</a>
+<a class="sourceLine" id="cb16-52" data-line-number="52">    lev &lt;-<span class="st"> "*"</span></a>
+<a class="sourceLine" id="cb16-53" data-line-number="53">    <span class="cf">if</span> (match.level) {</a>
+<a class="sourceLine" id="cb16-54" data-line-number="54">      <span class="cf">if</span> (<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(targ.lev) <span class="op">&gt;</span><span class="st"> </span><span class="dv">1</span>) {</a>
+<a class="sourceLine" id="cb16-55" data-line-number="55">        targ.lev &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">max</a></span>(targ.lev)</a>
+<a class="sourceLine" id="cb16-56" data-line-number="56">        <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/warning">warning</a></span>(<span class="st">"Multiple single sound levels, choosing largest one"</span>)</a>
+<a class="sourceLine" id="cb16-57" data-line-number="57">      }</a>
+<a class="sourceLine" id="cb16-58" data-line-number="58">      ix1 &lt;-<span class="st"> </span>ix1 <span class="op">&amp;</span><span class="st"> </span>A_LEVEL <span class="op">==</span><span class="st"> </span>targ.lev</a>
+<a class="sourceLine" id="cb16-59" data-line-number="59">      ix2 &lt;-<span class="st"> </span>ix2 <span class="op">&amp;</span><span class="st"> </span>A_LEVEL <span class="op">==</span><span class="st"> </span>targ.lev</a>
+<a class="sourceLine" id="cb16-60" data-line-number="60">      lev &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/character">as.character</a></span>(targ.lev)</a>
+<a class="sourceLine" id="cb16-61" data-line-number="61">    }</a>
+<a class="sourceLine" id="cb16-62" data-line-number="62">    </a>
+<a class="sourceLine" id="cb16-63" data-line-number="63">    <span class="cf">if</span> (AB.eqlevel)</a>
+<a class="sourceLine" id="cb16-64" data-line-number="64">      ix3 &lt;-<span class="st"> </span>ix3 <span class="op">&amp;</span><span class="st"> </span>(A_LEVEL <span class="op">==</span><span class="st"> </span>B_LEVEL)</a>
+<a class="sourceLine" id="cb16-65" data-line-number="65">    </a>
+<a class="sourceLine" id="cb16-66" data-line-number="66">    sing1 &lt;-<span class="st"> </span>trials[ix1, <span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb16-67" data-line-number="67">    sing2 &lt;-<span class="st"> </span>trials[ix2, <span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb16-68" data-line-number="68">    duplx &lt;-<span class="st"> </span>trials[ix3, <span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb16-69" data-line-number="69">    success &lt;-<span class="st"> </span>REWARD[ix3]</a>
+<a class="sourceLine" id="cb16-70" data-line-number="70">    </a>
+<a class="sourceLine" id="cb16-71" data-line-number="71">    <span class="cf">if</span> (go.by.soff)</a>
+<a class="sourceLine" id="cb16-72" data-line-number="72">      end.time &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">min</a></span>(SOFF[ix1 <span class="op">|</span><span class="st"> </span>ix2 <span class="op">|</span><span class="st"> </span>ix3])</a>
+<a class="sourceLine" id="cb16-73" data-line-number="73">    </a>
+<a class="sourceLine" id="cb16-74" data-line-number="74">    spike.counter &lt;-<span class="st"> </span><span class="cf">function</span>(jj) {</a>
+<a class="sourceLine" id="cb16-75" data-line-number="75">      jj1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/match">match</a></span>(jj, trial.id)</a>
+<a class="sourceLine" id="cb16-76" data-line-number="76">      spks &lt;-<span class="st"> </span>timestamps[[jj1]]</a>
+<a class="sourceLine" id="cb16-77" data-line-number="77">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/function">return</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sum">sum</a></span>(spks <span class="op">&gt;</span><span class="st"> </span>start.time <span class="op">&amp;</span><span class="st"> </span>spks <span class="op">&lt;</span><span class="st"> </span>end.time))</a>
+<a class="sourceLine" id="cb16-78" data-line-number="78">    }</a>
+<a class="sourceLine" id="cb16-79" data-line-number="79">    </a>
+<a class="sourceLine" id="cb16-80" data-line-number="80">    Acounts &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">sapply</a></span>(sing1, spike.counter)</a>
+<a class="sourceLine" id="cb16-81" data-line-number="81">    Bcounts &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">sapply</a></span>(sing2, spike.counter)</a>
+<a class="sourceLine" id="cb16-82" data-line-number="82">    ABcounts &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">sapply</a></span>(duplx, spike.counter)</a>
+<a class="sourceLine" id="cb16-83" data-line-number="83">    </a>
+<a class="sourceLine" id="cb16-84" data-line-number="84">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/detach">detach</a></span>(trials)</a>
+<a class="sourceLine" id="cb16-85" data-line-number="85">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/detach">detach</a></span>(spiketimes)</a>
+<a class="sourceLine" id="cb16-86" data-line-number="86">    </a>
+<a class="sourceLine" id="cb16-87" data-line-number="87">    <span class="cf">if</span> ((<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(Acounts) <span class="op">==</span><span class="st"> </span><span class="dv">0</span>) <span class="op">|</span><span class="st"> </span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(Bcounts <span class="op">==</span><span class="st"> </span><span class="dv">0</span>)) <span class="op">|</span></a>
+<a class="sourceLine" id="cb16-88" data-line-number="88"><span class="st">        </span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(ABcounts <span class="op">==</span><span class="st"> </span><span class="dv">0</span>))) {</a>
+<a class="sourceLine" id="cb16-89" data-line-number="89">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/stop">stop</a></span>(<span class="st">"All the spike counts are 0 under a specific condition."</span>)</a>
+<a class="sourceLine" id="cb16-90" data-line-number="90">    }</a>
+<a class="sourceLine" id="cb16-91" data-line-number="91">    </a>
+<a class="sourceLine" id="cb16-92" data-line-number="92">    <span class="cf">if</span> ((<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(Acounts) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>) <span class="op">|</span></a>
+<a class="sourceLine" id="cb16-93" data-line-number="93"><span class="st">        </span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(Bcounts) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>) <span class="op">|</span><span class="st"> </span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(ABcounts) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>)) {</a>
+<a class="sourceLine" id="cb16-94" data-line-number="94">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/stop">stop</a></span>(<span class="st">"Only 1 available trial under a specific condition."</span>)</a>
+<a class="sourceLine" id="cb16-95" data-line-number="95">    }</a>
+<a class="sourceLine" id="cb16-96" data-line-number="96">    </a>
+<a class="sourceLine" id="cb16-97" data-line-number="97">    s1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(frq[<span class="dv">1</span>], <span class="st">"Hz "</span>, pos[<span class="dv">1</span>], <span class="st">"deg "</span>, lev, <span class="st">"Db "</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb16-98" data-line-number="98">    s2 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(frq[<span class="dv">2</span>], <span class="st">"Hz "</span>, pos[<span class="dv">2</span>], <span class="st">"deg "</span>, lev, <span class="st">"Db "</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb16-99" data-line-number="99">    dp &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(<span class="st">"Duplex: "</span>, lev, <span class="st">"Db "</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb16-100" data-line-number="100">    res =<span class="st"> </span><span class="kw"><a href="../reference/prml_tests_f.html">prml_tests_f</a></span>(</a>
+<a class="sourceLine" id="cb16-101" data-line-number="101">      <span class="dt">xA =</span> Acounts,</a>
+<a class="sourceLine" id="cb16-102" data-line-number="102">      <span class="dt">xB =</span> Bcounts,</a>
+<a class="sourceLine" id="cb16-103" data-line-number="103">      <span class="dt">xAB =</span> ABcounts,</a>
+<a class="sourceLine" id="cb16-104" data-line-number="104">      <span class="dt">labels =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(s1, s2, dp),</a>
+<a class="sourceLine" id="cb16-105" data-line-number="105">      <span class="dt">e =</span> <span class="dv">0</span>,</a>
+<a class="sourceLine" id="cb16-106" data-line-number="106">      <span class="dt">remove.zeros =</span> remove.zeros</a>
+<a class="sourceLine" id="cb16-107" data-line-number="107">    )</a>
+<a class="sourceLine" id="cb16-108" data-line-number="108">    <span class="co"># By default:</span></a>
+<a class="sourceLine" id="cb16-109" data-line-number="109">    <span class="co">#remove.zeros = FALSE</span></a>
+<a class="sourceLine" id="cb16-110" data-line-number="110">    <span class="co">#mu_l="min",mu_u="max",gamma.pars = c(0.5, 2e-10),</span></a>
+<a class="sourceLine" id="cb16-111" data-line-number="111">    <span class="co">#n_gq = 20, n_mu = 100, n_per = 100, alpha = 0.5</span></a>
+<a class="sourceLine" id="cb16-112" data-line-number="112">    </a>
+<a class="sourceLine" id="cb16-113" data-line-number="113">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/function">return</a></span>(res)</a>
+<a class="sourceLine" id="cb16-114" data-line-number="114">  }</a>
+<a class="sourceLine" id="cb16-115" data-line-number="115">  </a>
+<a class="sourceLine" id="cb16-116" data-line-number="116">  </a>
+<a class="sourceLine" id="cb16-117" data-line-number="117">  prml.from.fname.f &lt;-</a>
+<a class="sourceLine" id="cb16-118" data-line-number="118"><span class="st">    </span><span class="cf">function</span>(fname,</a>
+<a class="sourceLine" id="cb16-119" data-line-number="119">             <span class="dt">data.path =</span> <span class="st">"Data"</span>,</a>
+<a class="sourceLine" id="cb16-120" data-line-number="120">             <span class="dt">on.reward =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb16-121" data-line-number="121">             <span class="dt">match.level =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-122" data-line-number="122">             <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-123" data-line-number="123">             <span class="dt">outfile =</span> <span class="st">""</span>,</a>
+<a class="sourceLine" id="cb16-124" data-line-number="124">             <span class="dt">start =</span> <span class="dv">0</span>,</a>
+<a class="sourceLine" id="cb16-125" data-line-number="125">             <span class="dt">end =</span> <span class="dv">600</span>,</a>
+<a class="sourceLine" id="cb16-126" data-line-number="126">             <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-127" data-line-number="127">             <span class="dt">mccores =</span> <span class="dv">4</span>) {</a>
+<a class="sourceLine" id="cb16-128" data-line-number="128">      infile1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(data.path, <span class="st">"/JA/"</span>, fname, <span class="st">".txt"</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb16-129" data-line-number="129">      </a>
+<a class="sourceLine" id="cb16-130" data-line-number="130">      trials &lt;-</a>
+<a class="sourceLine" id="cb16-131" data-line-number="131"><span class="st">        </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(</a>
+<a class="sourceLine" id="cb16-132" data-line-number="132">          infile1,</a>
+<a class="sourceLine" id="cb16-133" data-line-number="133">          <span class="dt">col.names =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(</a>
+<a class="sourceLine" id="cb16-134" data-line-number="134">            <span class="st">"TRIAL"</span>,</a>
+<a class="sourceLine" id="cb16-135" data-line-number="135">            <span class="st">"TASKID"</span>,</a>
+<a class="sourceLine" id="cb16-136" data-line-number="136">            <span class="st">"A_FREQ"</span>,</a>
+<a class="sourceLine" id="cb16-137" data-line-number="137">            <span class="st">"B_FREQ"</span>,</a>
+<a class="sourceLine" id="cb16-138" data-line-number="138">            <span class="st">"XA"</span>,</a>
+<a class="sourceLine" id="cb16-139" data-line-number="139">            <span class="st">"XB"</span>,</a>
+<a class="sourceLine" id="cb16-140" data-line-number="140">            <span class="st">"REWARD"</span>,</a>
+<a class="sourceLine" id="cb16-141" data-line-number="141">            <span class="st">"A_LEVEL"</span>,</a>
+<a class="sourceLine" id="cb16-142" data-line-number="142">            <span class="st">"B_LEVEL"</span></a>
+<a class="sourceLine" id="cb16-143" data-line-number="143">          )</a>
+<a class="sourceLine" id="cb16-144" data-line-number="144">        )</a>
+<a class="sourceLine" id="cb16-145" data-line-number="145">      </a>
+<a class="sourceLine" id="cb16-146" data-line-number="146">      infile2 &lt;-</a>
+<a class="sourceLine" id="cb16-147" data-line-number="147"><span class="st">        </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(data.path, <span class="st">"/JA/"</span>, fname, <span class="st">"_spiketimes.txt"</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb16-148" data-line-number="148">      spiketimes &lt;-</a>
+<a class="sourceLine" id="cb16-149" data-line-number="149"><span class="st">        </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(infile2, <span class="dt">col.names =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"TRIAL2"</span>, <span class="st">"TIMES"</span>))</a>
+<a class="sourceLine" id="cb16-150" data-line-number="150">      </a>
+<a class="sourceLine" id="cb16-151" data-line-number="151">      FREQS &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unique">unique</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(trials<span class="op">$</span>A_FREQ, trials<span class="op">$</span>B_FREQ))</a>
+<a class="sourceLine" id="cb16-152" data-line-number="152">      alt.freq &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sort">sort</a></span>(FREQS[FREQS <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> <span class="op">&amp;</span><span class="st"> </span>FREQS <span class="op">!=</span><span class="st"> </span><span class="dv">742</span>])</a>
+<a class="sourceLine" id="cb16-153" data-line-number="153">      alt.pos &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="op">-</span><span class="dv">24</span>,<span class="op">-</span><span class="dv">6</span>, <span class="dv">6</span>, <span class="dv">24</span>)</a>
+<a class="sourceLine" id="cb16-154" data-line-number="154">      </a>
+<a class="sourceLine" id="cb16-155" data-line-number="155">      df &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/expand.grid">expand.grid</a></span>(alt.freq, alt.pos)</a>
+<a class="sourceLine" id="cb16-156" data-line-number="156">      res &lt;-<span class="st"> </span>parallel<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/parallel/topics/mclapply">mclapply</a></span>(<span class="dv">1</span><span class="op">:</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(df),</a>
+<a class="sourceLine" id="cb16-157" data-line-number="157">                                <span class="cf">function</span>(x) {</a>
+<a class="sourceLine" id="cb16-158" data-line-number="158">                                  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>({</a>
+<a class="sourceLine" id="cb16-159" data-line-number="159">                                    lbf &lt;-</a>
+<a class="sourceLine" id="cb16-160" data-line-number="160"><span class="st">                                      </span><span class="kw">prml.from.tri.f</span>(</a>
+<a class="sourceLine" id="cb16-161" data-line-number="161">                                        trials,</a>
+<a class="sourceLine" id="cb16-162" data-line-number="162">                                        spiketimes,</a>
+<a class="sourceLine" id="cb16-163" data-line-number="163">                                        <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">1</span>], <span class="dv">742</span>),</a>
+<a class="sourceLine" id="cb16-164" data-line-number="164">                                        <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">2</span>],<span class="op">-</span><span class="dv">144</span> <span class="op">/</span><span class="st"> </span>df[x, <span class="dv">2</span>]),</a>
+<a class="sourceLine" id="cb16-165" data-line-number="165">                                        on.reward,</a>
+<a class="sourceLine" id="cb16-166" data-line-number="166">                                        start,</a>
+<a class="sourceLine" id="cb16-167" data-line-number="167">                                        end,</a>
+<a class="sourceLine" id="cb16-168" data-line-number="168">                                        match.level,</a>
+<a class="sourceLine" id="cb16-169" data-line-number="169">                                        AB.eqlevel,</a>
+<a class="sourceLine" id="cb16-170" data-line-number="170">                                        <span class="dt">go.by.soff =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-171" data-line-number="171">                                        <span class="dt">remove.zeros =</span> remove.zeros</a>
+<a class="sourceLine" id="cb16-172" data-line-number="172">                                      )</a>
+<a class="sourceLine" id="cb16-173" data-line-number="173">                                    cla &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">1</span>], df[x, <span class="dv">2</span>], <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unlist">unlist</a></span>(lbf<span class="op">$</span>out1))</a>
+<a class="sourceLine" id="cb16-174" data-line-number="174">                                    mix &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">1</span>], df[x, <span class="dv">2</span>], <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unlist">unlist</a></span>(lbf<span class="op">$</span>out2<span class="op">$</span>mix_pf))</a>
+<a class="sourceLine" id="cb16-175" data-line-number="175">                                    int &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">1</span>], df[x, <span class="dv">2</span>], <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unlist">unlist</a></span>(lbf<span class="op">$</span>out2<span class="op">$</span>int_pf))</a>
+<a class="sourceLine" id="cb16-176" data-line-number="176">                                    outA &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">1</span>], df[x, <span class="dv">2</span>], <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unlist">unlist</a></span>(lbf<span class="op">$</span>out2<span class="op">$</span>outA_pf))</a>
+<a class="sourceLine" id="cb16-177" data-line-number="177">                                    outB &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(df[x, <span class="dv">1</span>], df[x, <span class="dv">2</span>], <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unlist">unlist</a></span>(lbf<span class="op">$</span>out2<span class="op">$</span>outB_pf))</a>
+<a class="sourceLine" id="cb16-178" data-line-number="178">                                    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list">list</a></span>(cla, mix, int, outA, outB)</a>
+<a class="sourceLine" id="cb16-179" data-line-number="179">                                  })</a>
+<a class="sourceLine" id="cb16-180" data-line-number="180">                                },</a>
+<a class="sourceLine" id="cb16-181" data-line-number="181">                                <span class="dt">mc.cores =</span> mccores)</a>
+<a class="sourceLine" id="cb16-182" data-line-number="182">      <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">lapply</a></span>(res, <span class="cf">function</span>(x) {</a>
+<a class="sourceLine" id="cb16-183" data-line-number="183">        <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>({</a>
+<a class="sourceLine" id="cb16-184" data-line-number="184">          <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(fname, x[[<span class="dv">1</span>]], <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">file =</span> outfile, <span class="dt">append =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb16-185" data-line-number="185">          <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"mix"</span>,</a>
+<a class="sourceLine" id="cb16-186" data-line-number="186">              fname,</a>
+<a class="sourceLine" id="cb16-187" data-line-number="187">              x[[<span class="dv">2</span>]],</a>
+<a class="sourceLine" id="cb16-188" data-line-number="188">              <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>,</a>
+<a class="sourceLine" id="cb16-189" data-line-number="189">              <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"mix_"</span>, outfile),</a>
+<a class="sourceLine" id="cb16-190" data-line-number="190">              <span class="dt">append =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb16-191" data-line-number="191">          <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(</a>
+<a class="sourceLine" id="cb16-192" data-line-number="192">            <span class="st">"int"</span>,</a>
+<a class="sourceLine" id="cb16-193" data-line-number="193">            fname,</a>
+<a class="sourceLine" id="cb16-194" data-line-number="194">            x[[<span class="dv">3</span>]],</a>
+<a class="sourceLine" id="cb16-195" data-line-number="195">            <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>,</a>
+<a class="sourceLine" id="cb16-196" data-line-number="196">            <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"int_out_"</span>, outfile),</a>
+<a class="sourceLine" id="cb16-197" data-line-number="197">            <span class="dt">append =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb16-198" data-line-number="198">          )</a>
+<a class="sourceLine" id="cb16-199" data-line-number="199">          <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(</a>
+<a class="sourceLine" id="cb16-200" data-line-number="200">            <span class="st">"outA"</span>,</a>
+<a class="sourceLine" id="cb16-201" data-line-number="201">            fname,</a>
+<a class="sourceLine" id="cb16-202" data-line-number="202">            x[[<span class="dv">4</span>]],</a>
+<a class="sourceLine" id="cb16-203" data-line-number="203">            <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>,</a>
+<a class="sourceLine" id="cb16-204" data-line-number="204">            <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"int_out_"</span>, outfile),</a>
+<a class="sourceLine" id="cb16-205" data-line-number="205">            <span class="dt">append =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb16-206" data-line-number="206">          )</a>
+<a class="sourceLine" id="cb16-207" data-line-number="207">          <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(</a>
+<a class="sourceLine" id="cb16-208" data-line-number="208">            <span class="st">"outB"</span>,</a>
+<a class="sourceLine" id="cb16-209" data-line-number="209">            fname,</a>
+<a class="sourceLine" id="cb16-210" data-line-number="210">            x[[<span class="dv">5</span>]],</a>
+<a class="sourceLine" id="cb16-211" data-line-number="211">            <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>,</a>
+<a class="sourceLine" id="cb16-212" data-line-number="212">            <span class="dt">file =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"int_out_"</span>, outfile),</a>
+<a class="sourceLine" id="cb16-213" data-line-number="213">            <span class="dt">append =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb16-214" data-line-number="214">          )</a>
+<a class="sourceLine" id="cb16-215" data-line-number="215">        })</a>
+<a class="sourceLine" id="cb16-216" data-line-number="216">      })</a>
+<a class="sourceLine" id="cb16-217" data-line-number="217">      </a>
+<a class="sourceLine" id="cb16-218" data-line-number="218">    }</a>
+<a class="sourceLine" id="cb16-219" data-line-number="219">  </a>
+<a class="sourceLine" id="cb16-220" data-line-number="220">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Random">set.seed</a></span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb16-221" data-line-number="221">  fnames &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/scan">scan</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"filenames_"</span>, file_number, <span class="st">".txt"</span>), <span class="st">"a"</span>)</a>
+<a class="sourceLine" id="cb16-222" data-line-number="222">  </a>
+<a class="sourceLine" id="cb16-223" data-line-number="223">  start &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Sys.time">Sys.time</a></span>()</a>
+<a class="sourceLine" id="cb16-224" data-line-number="224">  </a>
+<a class="sourceLine" id="cb16-225" data-line-number="225">  <span class="cf">for</span> (file.name <span class="cf">in</span> fnames) {</a>
+<a class="sourceLine" id="cb16-226" data-line-number="226">    <span class="co">#"Data" is the folder you store all the .txt files</span></a>
+<a class="sourceLine" id="cb16-227" data-line-number="227">    <span class="co">#"result.txt" is the folder you store the result</span></a>
+<a class="sourceLine" id="cb16-228" data-line-number="228">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>(<span class="kw">prml.from.fname.f</span>(</a>
+<a class="sourceLine" id="cb16-229" data-line-number="229">      file.name,</a>
+<a class="sourceLine" id="cb16-230" data-line-number="230">      <span class="dt">data.path =</span> <span class="st">"Data"</span>,</a>
+<a class="sourceLine" id="cb16-231" data-line-number="231">      <span class="dt">on.reward =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb16-232" data-line-number="232">      <span class="dt">match.level =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-233" data-line-number="233">      <span class="dt">AB.eqlevel =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-234" data-line-number="234">      <span class="dt">outfile =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(<span class="st">"result_"</span>, file_number, <span class="st">".txt"</span>),</a>
+<a class="sourceLine" id="cb16-235" data-line-number="235">      <span class="dt">start =</span> <span class="dv">0</span>,</a>
+<a class="sourceLine" id="cb16-236" data-line-number="236">      <span class="dt">end =</span> <span class="dv">600</span>,</a>
+<a class="sourceLine" id="cb16-237" data-line-number="237">      <span class="dt">remove.zeros =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb16-238" data-line-number="238">      <span class="dt">mccores =</span> n_parallel</a>
+<a class="sourceLine" id="cb16-239" data-line-number="239">    ))</a>
+<a class="sourceLine" id="cb16-240" data-line-number="240">  }</a>
+<a class="sourceLine" id="cb16-241" data-line-number="241">  </a>
+<a class="sourceLine" id="cb16-242" data-line-number="242">  end &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Sys.time">Sys.time</a></span>()</a>
+<a class="sourceLine" id="cb16-243" data-line-number="243">  </a>
+<a class="sourceLine" id="cb16-244" data-line-number="244">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cat">cat</a></span>(<span class="st">"Run time: "</span>, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/difftime">difftime</a></span>(end, start, <span class="dt">units =</span> <span class="st">"secs"</span>), <span class="st">"s</span><span class="ch">\n</span><span class="st">"</span>, <span class="dt">sep =</span> <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb16-245" data-line-number="245">}</a></code></pre></div>
+</div>
+<div id="fetch-results-and-visualizations-1" class="section level2">
+<h2 class="hasAnchor">
+<a href="#fetch-results-and-visualizations-1" class="anchor"></a>Fetch Results and Visualizations</h2>
+<p>In your local folder <code>Results</code>, fetch the results from compute cluster.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="fu">rsync</span> -av ACCOUNT@dcc-slogin.oit.duke.edu:./Analysis/*result_* PATH_TO_RESULTS</a></code></pre></div>
+<p>Data cleaning and visualization.</p>
+<ul>
+<li>Obtain the file list for all the result.</li>
+</ul>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"tidyverse"</span>)</a>
+<a class="sourceLine" id="cb18-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">filelist_cla =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list.files">list.files</a></span>(<span class="dt">pattern =</span> <span class="st">"^result_*"</span>)</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4">filelist_mix =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list.files">list.files</a></span>(<span class="dt">pattern =</span> <span class="st">"mix_result_*"</span>)</a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">filelist_intout =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list.files">list.files</a></span>(<span class="dt">pattern =</span> <span class="st">"int_out_result_*"</span>)</a></code></pre></div>
+<ul>
+<li>For the classification,</li>
+</ul>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" data-line-number="1">raw =<span class="st"> </span><span class="kw"><a href="https://purrr.tidyverse.org/reference/map.html">map_dfr</a></span>(filelist_cla, <span class="cf">function</span>(x) {</a>
+<a class="sourceLine" id="cb19-2" data-line-number="2">  <span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(</a>
+<a class="sourceLine" id="cb19-3" data-line-number="3">    x,</a>
+<a class="sourceLine" id="cb19-4" data-line-number="4">    <span class="dt">header =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb19-5" data-line-number="5">    <span class="dt">sep =</span> <span class="st">" "</span>,</a>
+<a class="sourceLine" id="cb19-6" data-line-number="6">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb19-7" data-line-number="7">    <span class="dt">fill =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb19-8" data-line-number="8">  ) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-9" data-line-number="9"><span class="st">    </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>V2 <span class="op">%in%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Error"</span>, <span class="st">""</span>))</a>
+<a class="sourceLine" id="cb19-10" data-line-number="10">}) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-11" data-line-number="11"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e =</span> <span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#plug in the value of e you set in prml_tests()</span></a>
+<a class="sourceLine" id="cb19-12" data-line-number="12"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="op">-</span>V15)</a>
+<a class="sourceLine" id="cb19-13" data-line-number="13"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/names">names</a></span>(raw) =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(</a>
+<a class="sourceLine" id="cb19-14" data-line-number="14">  <span class="st">"CellId"</span>,</a>
+<a class="sourceLine" id="cb19-15" data-line-number="15">  <span class="st">"AltFreq"</span>,</a>
+<a class="sourceLine" id="cb19-16" data-line-number="16">  <span class="st">"AltPos"</span>,</a>
+<a class="sourceLine" id="cb19-17" data-line-number="17">  <span class="st">"SepBF"</span>,</a>
+<a class="sourceLine" id="cb19-18" data-line-number="18">  <span class="st">"PrMix"</span>,</a>
+<a class="sourceLine" id="cb19-19" data-line-number="19">  <span class="st">"PrInt"</span>,</a>
+<a class="sourceLine" id="cb19-20" data-line-number="20">  <span class="st">"PrOut"</span>,</a>
+<a class="sourceLine" id="cb19-21" data-line-number="21">  <span class="st">"PrSing"</span>,</a>
+<a class="sourceLine" id="cb19-22" data-line-number="22">  <span class="st">"WinModels"</span>,</a>
+<a class="sourceLine" id="cb19-23" data-line-number="23">  <span class="st">"Pval1"</span>,</a>
+<a class="sourceLine" id="cb19-24" data-line-number="24">  <span class="st">"Pval2"</span>,</a>
+<a class="sourceLine" id="cb19-25" data-line-number="25">  <span class="st">"SampSizeA"</span>,</a>
+<a class="sourceLine" id="cb19-26" data-line-number="26">  <span class="st">"SampSizeB"</span>,</a>
+<a class="sourceLine" id="cb19-27" data-line-number="27">  <span class="st">"SampSizeAB"</span>,</a>
+<a class="sourceLine" id="cb19-28" data-line-number="28">  <span class="st">"e"</span></a>
+<a class="sourceLine" id="cb19-29" data-line-number="29">)</a>
+<a class="sourceLine" id="cb19-30" data-line-number="30">raw =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(</a>
+<a class="sourceLine" id="cb19-31" data-line-number="31">  <span class="dt">SepBF =</span> SepBF <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-32" data-line-number="32">  <span class="dt">PrMix =</span> PrMix <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-33" data-line-number="33">  <span class="dt">PrInt =</span> PrInt <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-34" data-line-number="34">  <span class="dt">PrOut =</span> PrOut <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-35" data-line-number="35">  <span class="dt">PrSing =</span> PrSing <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-36" data-line-number="36">  <span class="dt">WinModels =</span> WinModels <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-37" data-line-number="37">  <span class="dt">Pval1 =</span> Pval1 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-38" data-line-number="38">  <span class="dt">Pval2 =</span> Pval2 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-39" data-line-number="39">  <span class="dt">SampSizeA =</span> SampSizeA <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-40" data-line-number="40">  <span class="dt">SampSizeB =</span> SampSizeB <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(),</a>
+<a class="sourceLine" id="cb19-41" data-line-number="41">  <span class="dt">SampSizeAB =</span> SampSizeAB <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>()</a>
+<a class="sourceLine" id="cb19-42" data-line-number="42">)</a>
+<a class="sourceLine" id="cb19-43" data-line-number="43">model.names =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Mixture"</span>, <span class="st">"Intermediate"</span>, <span class="st">"Outside"</span>, <span class="st">"Single"</span>)</a>
+<a class="sourceLine" id="cb19-44" data-line-number="44">raw =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(CellId, AltFreq, AltPos, <span class="dt">sep =</span> <span class="st">"."</span>))</a>
+<a class="sourceLine" id="cb19-45" data-line-number="45"><span class="co">#filter out data that has errors</span></a>
+<a class="sourceLine" id="cb19-46" data-line-number="46">cids =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>WinModels <span class="op">%in%</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">4</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(cid)</a>
+<a class="sourceLine" id="cb19-47" data-line-number="47">rawf =<span class="st"> </span>raw <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(<span class="op">!</span>cid <span class="op">%in%</span><span class="st"> </span>cids) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-48" data-line-number="48"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinModel =</span> model.names[WinModels],</a>
+<a class="sourceLine" id="cb19-49" data-line-number="49">         <span class="dt">WinPr =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Extremes">pmax</a></span>(PrMix, PrInt, PrOut, PrSing))</a>
+<a class="sourceLine" id="cb19-50" data-line-number="50"></a>
+<a class="sourceLine" id="cb19-51" data-line-number="51"><span class="co">#triplets not filtered by PRML filter</span></a>
+<a class="sourceLine" id="cb19-52" data-line-number="52">tri_unfilter=rawf<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-53" data-line-number="53"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(SampSizeA<span class="op">&gt;=</span><span class="dv">5</span>,SampSizeB<span class="op">&gt;=</span><span class="dv">5</span>,SampSizeAB<span class="op">&gt;=</span><span class="dv">5</span>,SepBF<span class="op">&gt;=</span><span class="dv">3</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#well-separated and enough sample size</span></a>
+<a class="sourceLine" id="cb19-54" data-line-number="54"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinProb=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cut">cut</a></span>(WinPr, <span class="dt">breaks=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>,<span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.95</span>, <span class="fl">1.01</span>),<span class="dt">include.lowest =</span> <span class="ot">TRUE</span>)) <span class="co">#cut the winning probabilities to four categories</span></a>
+<a class="sourceLine" id="cb19-55" data-line-number="55"></a>
+<a class="sourceLine" id="cb19-56" data-line-number="56"></a>
+<a class="sourceLine" id="cb19-57" data-line-number="57"><span class="co">#triplets filtered by PRML filter</span></a>
+<a class="sourceLine" id="cb19-58" data-line-number="58">tri_filter=tri_unfilter <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb19-59" data-line-number="59"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">invPval1=</span><span class="dv">1</span><span class="op">/</span>Pval1,<span class="dt">invPval2=</span><span class="dv">1</span><span class="op">/</span>Pval2)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-60" data-line-number="60"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(invPval1<span class="op">&lt;=</span><span class="dv">20</span>,invPval2<span class="op">&lt;=</span><span class="dv">20</span>)<span class="op">%&gt;%</span><span class="st"> </span><span class="co">#filter by PRML filter.</span></a>
+<a class="sourceLine" id="cb19-61" data-line-number="61"><span class="st">  </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="op">-</span>invPval1,<span class="op">-</span>invPval2)</a>
+<a class="sourceLine" id="cb19-62" data-line-number="62"></a>
+<a class="sourceLine" id="cb19-63" data-line-number="63">tri=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cbind">rbind</a></span>(tri_unfilter,tri_filter)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-64" data-line-number="64"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">group=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"unfiltered"</span>,<span class="st">"filtered"</span>),</a>
+<a class="sourceLine" id="cb19-65" data-line-number="65">                   <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(tri_unfilter),<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(tri_filter))))<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb19-66" data-line-number="66"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">WinModel=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/factor">factor</a></span>(WinModel,<span class="dt">levels =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Outside"</span>,<span class="st">"Single"</span>,<span class="st">"Intermediate"</span>,<span class="st">"Mixture"</span>)))</a>
+<a class="sourceLine" id="cb19-67" data-line-number="67"></a>
+<a class="sourceLine" id="cb19-68" data-line-number="68"><span class="co">#save as a .RData</span></a>
+<a class="sourceLine" id="cb19-69" data-line-number="69"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/save">save</a></span>(tri,<span class="dt">file =</span> <span class="st">"tri_filter_unfilter.RData"</span>)</a></code></pre></div>
+<ul>
+<li>Visualization on classification</li>
+</ul>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(<span class="st">"ggplot2"</span>)</a>
+<a class="sourceLine" id="cb20-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb20-3" data-line-number="3"><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(<span class="dt">data =</span> tri,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x =</span> WinModel,<span class="dt">color=</span>WinProb,<span class="dt">fill=</span>WinProb))<span class="op">+</span></a>
+<a class="sourceLine" id="cb20-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_bar">geom_bar</a></span>(<span class="dt">stat=</span><span class="st">"count"</span>,<span class="dt">position =</span> <span class="st">"stack"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb20-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/facet_grid">facet_grid</a></span>(<span class="op">~</span>group)<span class="op">+</span></a>
+<a class="sourceLine" id="cb20-6" data-line-number="6"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_text">geom_text</a></span>(<span class="dt">stat=</span><span class="st">'count'</span>, <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">label=</span>..count..), <span class="dt">position =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/position_stack">position_stack</a></span>(<span class="dt">vjust =</span> <span class="fl">0.5</span>),<span class="dt">size=</span><span class="dv">3</span>,<span class="dt">color=</span><span class="st">"black"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb20-7" data-line-number="7"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_discrete">scale_x_discrete</a></span>(<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span></a>
+<a class="sourceLine" id="cb20-8" data-line-number="8"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_grey">scale_colour_grey</a></span>(<span class="dt">start =</span> <span class="fl">0.9</span>,<span class="dt">end=</span><span class="fl">0.3</span>,<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span><span class="st"> </span><span class="co">#if you use grey color</span></a>
+<a class="sourceLine" id="cb20-9" data-line-number="9"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/scale_grey">scale_fill_grey</a></span>(<span class="dt">start =</span> <span class="fl">0.9</span>,<span class="dt">end=</span><span class="fl">0.3</span>,<span class="dt">drop=</span><span class="ot">FALSE</span>) <span class="op">+</span></a>
+<a class="sourceLine" id="cb20-10" data-line-number="10"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggtheme">theme_bw</a></span>()</a>
+<a class="sourceLine" id="cb20-11" data-line-number="11"><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggsave">ggsave</a></span>(<span class="dt">filename =</span> <span class="st">"plot.pdf"</span>,<span class="dt">width =</span> <span class="dv">8</span>,<span class="dt">height =</span> <span class="dv">4</span>)</a></code></pre></div>
+<ul>
+<li>For the density estimation,</li>
+</ul>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" data-line-number="1">e_=<span class="dv">0</span> <span class="co"># the value of e </span></a>
+<a class="sourceLine" id="cb21-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb21-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb21-4" data-line-number="4">filelist_intout =<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list.files">list.files</a></span>(<span class="dt">pattern =</span> <span class="st">"int_out_result_*"</span>)</a>
+<a class="sourceLine" id="cb21-5" data-line-number="5">int =<span class="st"> </span><span class="kw"><a href="https://purrr.tidyverse.org/reference/map.html">map_dfr</a></span>(filelist_intout, <span class="cf">function</span>(x) {</a>
+<a class="sourceLine" id="cb21-6" data-line-number="6">  <span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(</a>
+<a class="sourceLine" id="cb21-7" data-line-number="7">    x,</a>
+<a class="sourceLine" id="cb21-8" data-line-number="8">    <span class="dt">header =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb21-9" data-line-number="9">    <span class="dt">sep =</span> <span class="st">" "</span>,</a>
+<a class="sourceLine" id="cb21-10" data-line-number="10">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb21-11" data-line-number="11">    <span class="dt">fill =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb21-12" data-line-number="12">  )}) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb21-13" data-line-number="13"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e=</span>e_) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb21-14" data-line-number="14"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(V2,V3,V4,<span class="dt">sep =</span> <span class="st">"."</span>))</a>
+<a class="sourceLine" id="cb21-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb21-16" data-line-number="16">mix =<span class="st"> </span><span class="kw"><a href="https://purrr.tidyverse.org/reference/map.html">map_dfr</a></span>(filelist_mix, <span class="cf">function</span>(x) {</a>
+<a class="sourceLine" id="cb21-17" data-line-number="17">  <span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.table</a></span>(</a>
+<a class="sourceLine" id="cb21-18" data-line-number="18">    x,</a>
+<a class="sourceLine" id="cb21-19" data-line-number="19">    <span class="dt">header =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb21-20" data-line-number="20">    <span class="dt">sep =</span> <span class="st">" "</span>,</a>
+<a class="sourceLine" id="cb21-21" data-line-number="21">    <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb21-22" data-line-number="22">    <span class="dt">fill =</span> <span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb21-23" data-line-number="23">  )}) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb21-24" data-line-number="24"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">e=</span>e_,<span class="dt">V5=</span>e_<span class="op">+</span>(<span class="dv">1-2</span><span class="op">*</span>e_)<span class="op">*</span>V5,<span class="dt">V6=</span>e_<span class="op">+</span>(<span class="dv">1-2</span><span class="op">*</span>e_)<span class="op">*</span>V6)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb21-25" data-line-number="25"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">cid=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste</a></span>(V2,V3,V4,<span class="dt">sep =</span> <span class="st">"."</span>)) </a></code></pre></div>
+<ul>
+<li>Visualization on pdf</li>
+</ul>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="co"># Here I draw the filtered triplets.</span></a>
+<a class="sourceLine" id="cb22-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb22-3" data-line-number="3">dfres=tri<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb22-4" data-line-number="4"><span class="st">  </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(group<span class="op">==</span><span class="st">"filtered"</span>)</a>
+<a class="sourceLine" id="cb22-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb22-6" data-line-number="6">ids=dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(cid)</a>
+<a class="sourceLine" id="cb22-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb22-8" data-line-number="8"><span class="kw"><a href="https://www.rdocumentation.org/packages/grDevices/topics/pdf">pdf</a></span>(<span class="dt">height =</span> <span class="dv">3</span>, <span class="dt">width =</span> <span class="dv">5</span>, <span class="dt">file =</span> <span class="st">"plot_pdf.pdf"</span>)</a>
+<a class="sourceLine" id="cb22-9" data-line-number="9"><span class="cf">for</span> (i <span class="cf">in</span> ids){</a>
+<a class="sourceLine" id="cb22-10" data-line-number="10">  <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/try">try</a></span>({</a>
+<a class="sourceLine" id="cb22-11" data-line-number="11">    int0=int<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i,V1<span class="op">==</span><span class="st">"int"</span>)<span class="op">%&gt;%</span>.[,<span class="dv">5</span><span class="op">:</span><span class="dv">104</span>]<span class="op">%&gt;%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/t">t</a></span>()</a>
+<a class="sourceLine" id="cb22-12" data-line-number="12">    df1=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">ind=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/seq">seq</a></span>(e_,<span class="dv">1</span><span class="op">-</span>e_,<span class="dt">length.out =</span> <span class="dv">100</span>),<span class="dt">y=</span>int0,<span class="dt">e=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(e_,<span class="dv">100</span>),<span class="dt">model=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="st">"int"</span>,<span class="dv">100</span>))</a>
+<a class="sourceLine" id="cb22-13" data-line-number="13">    mix0=mix<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span>.[,<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">5</span>,<span class="dv">6</span>)]<span class="op">%&gt;%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/t">t</a></span>()</a>
+<a class="sourceLine" id="cb22-14" data-line-number="14">    df2=<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">ind=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>,<span class="dv">1</span>),<span class="dt">y=</span>mix0,<span class="dt">e=</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="dv">0</span>,<span class="dv">2</span>))</a>
+<a class="sourceLine" id="cb22-15" data-line-number="15">    p=<span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>(<span class="dt">data =</span> df1,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>ind,<span class="dt">y=</span>y))<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-16" data-line-number="16"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_path">geom_line</a></span>()<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-17" data-line-number="17"><span class="st">      </span><span class="co">#facet_grid(.~e)+</span></a>
+<a class="sourceLine" id="cb22-18" data-line-number="18"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_point">geom_point</a></span>(<span class="dt">data=</span>df2,<span class="dt">mapping =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>ind,<span class="dt">y=</span>y))<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-19" data-line-number="19"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_hline</a></span>(<span class="dt">yintercept =</span> e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-20" data-line-number="20"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_hline</a></span>(<span class="dt">yintercept =</span> <span class="dv">1</span><span class="op">-</span>e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-21" data-line-number="21"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-22" data-line-number="22"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> <span class="dv">1</span><span class="op">-</span>e_,<span class="dt">linetype=</span><span class="st">"dashed"</span>)<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-23" data-line-number="23"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/labs">ggtitle</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(i,<span class="st">";"</span>),</a>
+<a class="sourceLine" id="cb22-24" data-line-number="24">              <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/paste">paste0</a></span>(dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(WinModel),</a>
+<a class="sourceLine" id="cb22-25" data-line-number="25">                     <span class="st">";WinProb:"</span>,</a>
+<a class="sourceLine" id="cb22-26" data-line-number="26">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(WinPr)<span class="op">%&gt;%</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/Round">round</a></span>(.,<span class="dv">4</span>),</a>
+<a class="sourceLine" id="cb22-27" data-line-number="27">                     <span class="st">";SizeA:"</span>,</a>
+<a class="sourceLine" id="cb22-28" data-line-number="28">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(SampSizeA),</a>
+<a class="sourceLine" id="cb22-29" data-line-number="29">                     <span class="st">";SizeB:"</span>,</a>
+<a class="sourceLine" id="cb22-30" data-line-number="30">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(SampSizeB),</a>
+<a class="sourceLine" id="cb22-31" data-line-number="31">                     <span class="st">";SizeAB:"</span>,</a>
+<a class="sourceLine" id="cb22-32" data-line-number="32">                     dfres<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(cid<span class="op">==</span>i)<span class="op">%&gt;%</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span>(SampSizeAB)</a>
+<a class="sourceLine" id="cb22-33" data-line-number="33">              ))<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-34" data-line-number="34"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/ggtheme">theme_bw</a></span>()<span class="op">+</span></a>
+<a class="sourceLine" id="cb22-35" data-line-number="35"><span class="st">      </span><span class="kw"><a href="https://www.rdocumentation.org/packages/ggplot2/topics/labs">xlab</a></span>(<span class="st">""</span>)</a>
+<a class="sourceLine" id="cb22-36" data-line-number="36">    <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/print">print</a></span>(p)</a>
+<a class="sourceLine" id="cb22-37" data-line-number="37">  })</a>
+<a class="sourceLine" id="cb22-38" data-line-number="38">}</a>
+<a class="sourceLine" id="cb22-39" data-line-number="39"><span class="kw"><a href="https://www.rdocumentation.org/packages/grDevices/topics/dev">dev.off</a></span>()</a></code></pre></div>
 </div>
   </div>
 
@@ -617,15 +998,17 @@
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
       <ul class="nav nav-pills nav-stacked">
-<li><a href="#preparation">Preparation</a></li>
-      <li><a href="#r-scriptparallel-version">R Script(Parallel Version)</a></li>
+<li><a href="#steps">Steps</a></li>
+      <li><a href="#preparation">Preparation</a></li>
+      <li><a href="#r-script-parallel-version">R Script (Parallel Version)</a></li>
       <li><a href="#batch-script">Batch Script</a></li>
       <li><a href="#upload-files">Upload Files</a></li>
       <li><a href="#singularity-file">Singularity file</a></li>
       <li><a href="#run-in-compute-cluster">Run in Compute Cluster</a></li>
-      <li><a href="#example-for-applying-prml_tests_f">Example for applying <code><a href="--/reference/prml_tests_f-html">prml_tests_f()</a></code></a></li>
-      <li><a href="#visualization-of-the-classification">Visualization of the classification</a></li>
-      <li><a href="#visualization-of-the-density-estimation">Visualization of the density estimation</a></li>
+      <li><a href="#fetch-results-and-visualizations">Fetch Results and Visualizations</a></li>
+      <li><a href="#notes">Notes</a></li>
+      <li><a href="#another-r-script-example">Another R Script Example</a></li>
+      <li><a href="#fetch-results-and-visualizations-1">Fetch Results and Visualizations</a></li>
       </ul>
 </div>
       </div>

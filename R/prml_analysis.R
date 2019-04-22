@@ -34,7 +34,7 @@ logmean <- function(x) {
 #' @param rate_ A number, rate of the truncated gamma.
 #' @param a lower bound of the range
 #' @param b upper bound of the range
-#' @return A vector, iid samples from \eqn{ Ga_{[a,b]}(shape_,rate_) }
+#' @return A vector, iid samples from \eqn{ Ga_{[a,b]}(shape\_,rate\_) }
 #' @export
 rtgamma <- function(size, shape_, rate_, a, b) {
     u <- runif(n = size)
@@ -52,7 +52,7 @@ rtgamma <- function(size, shape_, rate_, a, b) {
 #' @param rate_ A number, rate of the truncated gamma.
 #' @param a lower bound of the range
 #' @param b upper bound of the range
-#' @return A vector, pdf of \eqn{ Ga_{[a,b]}(x_; shape_,rate_) }
+#' @return A vector, pdf of \eqn{ Ga_{[a,b]}(x\_; shape\_,rate\_) }
 #' @export
 dtgamma <- function(x_, shape_, rate_, a, b) {
     c_inv <- pgamma(q = b, shape = shape_, rate = rate_) -
